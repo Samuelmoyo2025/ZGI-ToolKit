@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technical Report — Zimnat General Insurance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{
+  /* dark green house palette */
+  --ink:#0a3025; --ink-2:#14503c; --line:#dbe5df; --line-2:#eef4f0;
+  --bg:#f4f8f6; --surface:#ffffff; --muted:#5f7c6f; --muted-2:#8aa397;
+  --accent:#166b46; --accent-deep:#0d4c30; --accent-soft:#e4f1ea;
+  --ok:#166b46; --ok-soft:#e4f1ea; --ok-line:#c3ddce;
+  --warn:#8a5a00; --warn-soft:#fdf3e2; --warn-line:#efdcba;
+  --bad:#a11c2c; --bad-soft:#fbeaec; --bad-line:#eecdd2;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+h1,h2,h3{margin:0;font-weight:600}
+button{font:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select:hover,input:hover{border-color:var(--muted-2)}
+
+/* ---------- chrome ---------- */
+header.top{background:var(--ink);color:#fff;padding:18px 28px;
+  box-shadow:inset 0 -3px 0 var(--accent);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:#8fb8a2}
+header.top h1{font-size:20px;letter-spacing:-.01em;margin-top:3px}
+.gear{background:transparent;border:1px solid #2d5f49;color:#c3dccf;
+  width:34px;height:34px;border-radius:7px;font-size:15px}
+.gear:hover{background:var(--ink-2)}
+
+.steps{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--line);
+  padding:0 28px;overflow-x:auto}
+.step{display:flex;align-items:center;gap:9px;padding:14px 22px 12px;border-bottom:2px solid transparent;
+  color:var(--muted-2);white-space:nowrap;font-size:13px;background:none;border-top:0;border-left:0;border-right:0}
+.step .n{width:21px;height:21px;border-radius:50%;background:var(--line);color:var(--muted);
+  display:grid;place-items:center;font-size:11px;font-weight:700}
+.step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.step.active .n{background:var(--accent);color:#fff}
+.step.done .n{background:var(--ok);color:#fff}
+
+main{max-width:1120px;margin:0 auto;padding:26px 28px 80px}
+.panel{display:none}.panel.on{display:block}
+
+/* ---------- shared bits ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:16px}
+.card>h2{padding:14px 18px;border-bottom:1px solid var(--line-2);font-size:13px;
+  background:linear-gradient(var(--surface),var(--line-2));border-radius:10px 10px 0 0;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.card>.body{padding:18px}
+.hint{color:var(--muted);font-size:12.5px}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:5px;min-width:170px}
+.field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:88px;line-height:1.55}
+
+.btn{background:var(--accent);color:#fff;border:0;border-radius:7px;padding:10px 18px;
+  font-weight:600;box-shadow:0 1px 0 var(--accent-deep)}
+.btn:hover:not(:disabled){background:var(--accent-deep)}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover:not(:disabled){background:var(--line-2)}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:22px}
+
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:26px 20px;text-align:center;
+  background:#fafcfb;transition:border-color .15s,background .15s}
+.drop.hot{border-color:var(--accent);background:var(--accent-soft)}
+.drop .lead{font-weight:600;margin-bottom:3px}
+.drop input{display:none}
+.pick{margin-top:12px}
+
+/* ---------- file assignment table ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  padding:9px 10px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.neg{color:var(--bad)}
+.fname{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);word-break:break-all}
+
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;
+  white-space:nowrap;border:1px solid transparent}
+.tag.ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok-line)}
+.tag.warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line)}
+.tag.bad{background:var(--bad-soft);color:var(--bad);border-color:var(--bad-line)}
+.tag.idle{background:var(--line-2);color:var(--muted);border-color:var(--line)}
+
+/* ---------- validate ---------- */
+.split{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
+@media(max-width:860px){.split{grid-template-columns:1fr}}
+.seclist{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  overflow:hidden;max-height:640px;overflow-y:auto}
+.seclist button{display:flex;width:100%;gap:10px;align-items:center;text-align:left;background:none;
+  border:0;border-bottom:1px solid var(--line-2);padding:10px 12px;color:var(--ink)}
+.seclist button:hover{background:var(--line-2)}
+.seclist button.sel{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
+.seclist .idx{font-family:var(--mono);font-size:11px;color:var(--muted-2);width:18px;flex:none}
+.seclist .nm{flex:1;font-size:12.5px;line-height:1.35}
+.seclist .dot{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+.seclist .dot.on{background:var(--accent)}
+.seclist .dot.part{background:var(--warn)}
+
+.notes{margin:0 0 14px;padding:11px 13px;border-radius:8px;font-size:12.5px;line-height:1.6}
+.notes.warn{background:var(--warn-soft);color:var(--warn)}
+.notes.bad{background:var(--bad-soft);color:var(--bad)}
+.notes ul{margin:6px 0 0;padding-left:18px}
+
+/* ---------- outputs ---------- */
+.outgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.stat .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:19px;margin-top:5px;letter-spacing:-.01em;color:var(--ink)}
+
+/* ---------- settings ---------- */
+.modal{position:fixed;inset:0;background:rgba(10,48,37,.6);display:none;
+  align-items:center;justify-content:center;padding:22px;z-index:50}
+.modal.on{display:flex}
+.sheet{background:var(--surface);border-radius:12px;width:min(880px,100%);max-height:86vh;
+  display:flex;flex-direction:column;overflow:hidden}
+.sheet header{display:flex;justify-content:space-between;align-items:center;
+  padding:15px 20px;border-bottom:1px solid var(--line)}
+.sheet .scroll{overflow:auto;padding:18px 20px}
+.sheet footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+.sheet select{padding:5px 7px;font-size:12.5px}
+.x{background:none;border:0;font-size:20px;color:var(--muted);line-height:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <div class="eyebrow"><a href="index.html" style="color:#8fb8a2;text-decoration:none">&larr; Main Menu</a> &nbsp;/&nbsp; Zimnat General Insurance &nbsp;/&nbsp; Finance Operations</div>
+    <h1>Technical Report</h1>
+  </div>
+  <button class="gear" id="gearBtn" title="Settings" aria-label="Settings">&#9881;</button>
+</header>
+
+<nav class="steps" id="steps">
+  <button class="step active" data-step="0"><span class="n">1</span> Upload</button>
+  <button class="step" data-step="1"><span class="n">2</span> Validate</button>
+  <button class="step" data-step="2"><span class="n">3</span> Download</button>
+</nav>
+
+<main>
+
+<!-- ================= STEP 1 ================= -->
+<section class="panel on" id="p0">
+
+  <div class="card">
+    <h2>Your files</h2>
+    <div class="body">
+      <p class="hint" style="margin:0 0 16px">
+        Drop everything in together &mdash; last week's Technical Report, the SIRIUS age
+        analysis exports, the reinsurance pivots, and last week's copies of either if you
+        have them. Each file is opened and identified on its own; nothing needs renaming
+        or sorting first.
+      </p>
+      <div class="drop" id="dropAll">
+        <div class="lead">Drop your files here</div>
+        <div class="hint">Any number, in any order</div>
+        <div class="pick"><button class="btn ghost" data-for="fAll">Choose files</button></div>
+        <input type="file" id="fAll" accept=".xlsx" multiple>
+      </div>
+      <div id="fileTable" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <div class="card" id="weekCard" style="display:none">
+    <h2>Reporting week</h2>
+    <div class="body">
+      <div class="row">
+        <div class="field">
+          <label for="weekEnd">Week ending</label>
+          <input type="date" id="weekEnd">
+        </div>
+        <div class="field">
+          <label for="weekPrev">Prior week</label>
+          <input type="date" id="weekPrev">
+        </div>
+      </div>
+      <p class="hint" style="margin:12px 0 0">
+        Taken from the SIRIUS banner and set back three days, since the system is run on
+        the Monday for the week ended the previous Friday. Change either if it looks wrong.
+      </p>
+    </div>
+  </div>
+
+  <div class="actions">
+    <span class="hint" id="p0hint">Drop your files above to begin.</span>
+    <button class="btn" id="toValidate" disabled>Next: Validate</button>
+  </div>
+</section>
+
+<!-- ================= STEP 2 ================= -->
+<section class="panel" id="p1">
+  <div class="split">
+    <div class="seclist" id="secList"></div>
+    <div id="secDetail"></div>
+  </div>
+  <div class="actions">
+    <button class="btn ghost" data-goto="0">&larr; Back</button>
+    <button class="btn" id="toDownload">Generate report</button>
+  </div>
+</section>
+
+<!-- ================= STEP 3 ================= -->
+<section class="panel" id="p2">
+  <div class="outgrid" id="outStats"></div>
+  <div class="card">
+    <h2>Output 01 &nbsp;·&nbsp; Weekly Technical Report</h2>
+    <div class="body">
+      <p class="hint" style="margin:0 0 16px">
+        Last week's workbook with the new week written in: dates advanced, movement history rolled
+        forward one column, aging rows replaced, prior-week aging moved down, and every Top 10 rebuilt.
+        Formatting, formulas and any section you did not load are left untouched.
+      </p>
+      <button class="btn" id="dlBtn">Download Technical Report</button>
+      <div id="dlState" class="hint" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Sections written</h2>
+    <div class="body" id="outList"></div>
+  </div>
+  <div class="actions">
+    <button class="btn ghost" data-goto="1">&larr; Back to Validate</button>
+    <span></span>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= SETTINGS ================= -->
+<div class="modal" id="modal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+    <header>
+      <h3 style="font-size:15px">Settings</h3>
+      <button class="x" id="modalClose" aria-label="Close">&times;</button>
+    </header>
+    <div class="scroll">
+      <p class="hint" style="margin:0 0 14px">
+        Each section keeps its own rule because that is how the report has been prepared.
+        The six confirmed rules were derived from the 3 July 2026 workbook and reproduce it exactly.
+        The rest are provisional until their exports are checked the same way.
+      </p>
+      <table id="cfgTable"></table>
+    </div>
+    <footer>
+      <button class="btn ghost" id="cfgReset">Reset to defaults</button>
+      <button class="btn" id="cfgSave">Save</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   Column layout of a SIRIUS Age Analysis export — POSITIONAL, row 5 onward.
+   Row 4 headings are not trusted: the 'Days Overdue' group header collapses
+   into that row and pushes A/CCode and A/CName from columns 1-2 to 6-7 on
+   some exports but not others.
+
+     1 A/CCode   2 A/CName   3 Unallocated Cash   4 Account Balance
+     5 Not Yet Due   6 0-30   7 31-60   8 61-90
+     9 91-120   10 121-180   11 180-365   12 Over 365
+
+   'Not Yet Due' is excluded from the report totals.
+   ========================================================================= */
+const BUCKETS = ['0-30','31-60','61-90','91-120','121-180','180-365','Over 365'];
+const B0 = 5;                                   // 0-index of '0-30'
+const GT30 = [6,7,8,9,10,11];
+const GT90 = [8,9,10,11];
+const GOOD_R4 = ['a/ccode','a/cname','unallocated cash','account balance','not yet due',
+                 '0-30 days due','31-60','61-90','91-120','121-180','180-365','over 365 days'];
+
+/* -------------------------------------------------------------------------
+   Reinsurance pivots are a different shape entirely: an Excel PivotTable on
+   a sheet named 'Aging', headers on row 4, data from row 5, Grand Total last.
+   Crucially the columns are NOT stable - a pivot drops a bucket column that
+   has no data, so these must be read by header label, never by position.
+   ------------------------------------------------------------------------- */
+const RI_BUCKETS = ['A - 0 - 30Days','B - 31 - 60Days','C - 61 - 90Days',
+                    'D - 91 - 120Days','E - 121 - 180Days','F - 181 - 365Days',
+                    'G - > 365Days'];
+const RI_SOURCES = {
+  payables_usd:   'RI Payables - USD',
+  payables_zwg:   'RI Payables - ZWG',
+  receivables_usd:'RI Receivables - USD',
+  receivables_zwg:'RI Receivables - ZWG'
+};
+/* Frozen from the eight mapping workbooks: 105 reinsurer groups, 412 keys.
+   Reconciles to each pivot grand total exactly. */
+const RI_MAP={
+ 7:{src:"payables_usd",g:[{n:"GRAND RE",k:["GRANDRECAPITOL","GRANDRE/ BRIGHT","GRAND_FAC","GRANDRE/MINERVA"]},{n:"FIRST MUTUAL RE",k:["FIRST MUTUAL/ BRIGHT","FIRST_FAC","FIRSTRE/MINERVA","FMRECAPITOL"]},{n:"ZB RE",k:["ZB RE/BRIGHT","ZBCAPITOL","ZB_FAC","ZBRE/MINERVA"]},{n:"FBC Re",k:["FBC INSURANCE/BRIGHT","FBCCAPITOL","FBC RE/BRIGHT","FBCRe/MINERVA","FBC_Re_Fac"]},{n:"TROPICAL RE",k:["TROPICAL RE/BRIGHT","TROPICALRE CAPITOL","TROPICALRE_FAC","TROPICALlRE/MINERVA"]},{n:"EMERITUS RE",k:["EMERITUS/ BRIGHT","EMERITUSCAPITOL","EMERITUS_Fac","EMERITUS/MINERVA"]},{n:"ZEP",k:["ZEP_MINERVA","ZEP RE/ BRIGHT"]},{n:"WAICA RE",k:["WAICA RE CAPITOL","WAICA RE/BRIGHT","WAICA","WAICA/ MINERVA"]},{n:"ECONET",k:["minervaeconet"]}]},
+ 8:{src:"payables_zwg",g:[{n:"GRAND RE",k:["capitolgrand","GRANDRE/GUY","GRAND_FAC","GRANDRE/MINERVA"]},{n:"FIRST MUTUAL RE",k:["CAPITOLFIRST","FIRST/GUY","FIRST_FAC","FIRSTRE/MINERVA"]},{n:"ZB RE",k:["capitolzb","ZB/GUY","ZBRE/MINERVA"]},{n:"FBC Re",k:["capitolfbc","FBC RE/GUY","FBCRe/MINERVA","FBC Re FAC"]},{n:"TROPICAL RE",k:["capitoltropical","TROPICAL/GUY","TROPICALRE_FAC","TROPICALlRE/MINERVA"]},{n:"EMERITUS RE",k:["capitolemeritus","EMERITUS/GUY","EMERITUS_FAC","EMERITUS RE/MINERVA"]},{n:"ZEP",k:["ZEP_FAC","ZEP_MINERVA","ZEPRE/GUY"]},{n:"AFC",k:["AFC"]},{n:"WAICA RE",k:["CAPITOLWAICA","WAICA/GUY","WAICA/MINERVA"]}]},
+ 9:{src:"receivables_usd",g:[{n:"GRAND RE",k:["GrandreAgreed","GRANDRE/ BRIGHT","GRAND_FAC","GRANDRE/MINERVA"]},{n:"FIRST MUTUAL RE",k:["FIRST MUTUAL/ BRIGHT","FIRST_FAC","FIRSTRE/MINERVA","FMRECAPITOL"]},{n:"ZB RE",k:["ZB RE/BRIGHT","ZBCAPITOL","ZBreAgreed","ZB_FAC","ZBRE/MINERVA"]},{n:"FBC Re",k:["FBC INSURANCE/BRIGHT","FBCCAPITOL","FBC RE/BRIGHT","FBCRe/MINERVA","FBC_Re_Fac"]},{n:"TROPICAL RE",k:["TROPICALRE CAPITOL","TROPICALRE_FAC","TROPICALlRE/MINERVA"]},{n:"EMERITUS RE",k:["EMERITUS/ BRIGHT","EMERITUSCAPITOL","EMERITUS_Fac","EMERITUS/MINERVA"]},{n:"ZEP",k:["ZEP_FAC","ZEP_MINERVA","ZEP RE/ BRIGHT"]},{n:"WAICA RE",k:["WAICA RE CAPITOL","WAICA/ MINERVA","WAICA RE"]},{n:"AFC",k:["AFC","AFC MINERVA","AFC BRIGHT"]}]},
+ 10:{src:"receivables_zwg",g:[{n:"GRAND RE",k:["GRAND_FAC","GRANDRE/GUY","GRANDRE/MINERVA","capitolgrand"]},{n:"FIRST MUTUAL RE",k:["FIRST/GUY","FIRST_FAC","FIRSTRE/MINERVA","CAPITOLFIRST"]},{n:"ZB RE",k:["RBIZBRE","ZB/GUY","ZB_FAC","ZBRE/MINERVA","capitolzb"]},{n:"FBC Re",k:["capitolfbc","FBC Re FAC","FBC RE/GUY","FBCRe/MINERVA"]},{n:"TROPICAL RE",k:["RBITROPICAL","TROPICAL/GUY","TROPICALlRE/MINERVA","TROPICALRE_FAC","capitoltropical"]},{n:"EMERITUS RE",k:["capitolemeritus","EMERITUS RE/MINERVA","EMERITUS/GUY","EMERITUS_FAC","EMERITUSLIFE","RBIEMERITUS"]},{n:"ZEP",k:["ZEP_FAC","ZEP_MINERVA","ZEPRE/GUY"]},{n:"WAICA RE",k:["RBIWAICA","WAICA/GUY","WAICA/MINERVA","CAPITOLWAICA"]},{n:"AFC INSURANCE",k:["AFC"]},{n:"NICOZ",k:["NICOZ/GUY"]},{n:"OLD MUTUAL",k:["OLD MUTUAL/ BRIGHTRE"]}]},
+ 11:{src:"payables_usd",g:[{n:"AFC",k:["AFC","AFC BRIGHT","AFC MINERVA"]},{n:"Bright Re",k:["BRIGHT RE","BrightOM"]},{n:"Celco",k:["CELCO"]},{n:"Emeritus",k:["EMERITUS","Emeritus_Auto","EMERITUS_QS","EMERITUSSURP","EMULIFE"]},{n:"FBC Re",k:["FBC Re","FBC Re Auto","FBC RET FUND","FBC_QS","FBC_XOL","FBCRE_XOL_3","FBCSURP"]},{n:"First Mutual Re",k:["FIRST SURPLUS","FIRST_AUTO","FIRST_QS","FMRESURP"]},{n:"Grand Re",k:["GRAND","GRAND RE AUTO FAC 1","GRAND_QS","GRANDRE QS","GRANDRE_AUTO","GrandreAgreed","GRANDSURP"]},{n:"ICZ",k:["ICZ"]},{n:"Minerva Re",k:["MINERVA RE FAC","minervaeconet","MinervaRe Auto Fac 1","TRANS MINERVA","TRISTAR/MINERVA","W SAFE MINERVA","CREDSURE/MINERVA"]},{n:"Old Mutual",k:["OLD MUTUAL INSURANCE","Oldmutualcapitol"]},{n:"Santam",k:["SHA(SANTAM)"]},{n:"SKY",k:["SKY","SKYEMERITUS","SKYFBC","SKYFIRST","SKYGRAND","SKYTROPICA","SKYWAICA","SKYZB"]},{n:"Tourism Mauritius",k:["TOURISMMAURITIUS"]},{n:"Trans Axis",k:["TransAxis"]},{n:"Tropical Re",k:["TROP","TROPICALQS","TROPICALRE_AUTO","TROPICALSURP"]},{n:"Waica Re",k:["WAICA AUTOFAC","WAICA RE","WAICAQS","WAICARE","WAICASURP"]},{n:"ZB Re",k:["ZB_AUTO","ZB_QS","ZB_RE","ZBRE NON MOT USD RET","ZBRE RET FUND","ZBRE_ACCESS FINANCE","ZBreAgreed","ZBRESURP"]},{n:"ZEP Re",k:["ZEPRE","ZEPRE_AUTO","ZEPRE_QS","ZEPRESURP"]},{n:"Zimnat Life",k:["ZIMNAT LIFE","Zimnat_Auto"]}]},
+ 12:{src:"payables_zwg",g:[{n:"Capitol",k:["capitol","capitolzep","CREDSURE/CAPITOL"]},{n:"CBZ",k:["CBZ-CAP"]},{n:"CELCO",k:["CELCO"]},{n:"EAGLE",k:["EAGLEGUY","EAGLEMINERVA"]},{n:"EMERITUS",k:["EMERITUS","EMERITUS_AUTO","EMERITUS_QS","EMERITUS_XOL","EMERITUSLIFE"]},{n:"FBC Re",k:["FBC Re","FBC Re Auto","FBC_QS","FBC_XOL"]},{n:"First Mutual Re",k:["FIRST","FIRST_AUTO","FIRST_QS","FIRSTRE_XOL","FIRSTRE_XOL_4","FIRSTREL"]},{n:"GRAND RE",k:["GRAND","GRAND RE AUTO FAC 1","GRAND_QS","GRANDRE QS","GRANDRE_AUTO","GRANDRE_XOL"]},{n:"Guy",k:["Guy Carpenter","GUYCREDIT"]},{n:"ICZ",k:["ICZ"]},{n:"Minerva Re",k:["Minerva Re","MINERVAFARMING","MINERVA-RE","ALTFIN/MINERVA"]},{n:"NICOZ DIAMOND",k:["NICOZ DIAMOND","NICOZ/GUY"]},{n:"OLD MUTUAL",k:["OLD MUTUAL INSURANCE","OLD MUTUAL/ BRIGHTRE","OLD MUTUAL/MINERVA"]},{n:"RBI",k:["RBI","RBIEMERITUS","RBIFBC","RBIFM","RBIGRAND","RBITROPICAL","RBIWAICA","RBIZBRE"]},{n:"SKY",k:["SKYEMERITUS","SKYFBC","SKYFIRST","skygrand","SKYTROPICAL","SKYWAICA","SKYZB"]},{n:"TRISTAR",k:["THI","TRISTAR/MINERVA","TRISTAR_FAC"]},{n:"TROPICAL",k:["TROP","TROPICAL","TROPICAL_QS","TROPICAL_XL_BD","TROPICAL_XOL","TROPICALRE_AUTO","TROPICALSURP"]},{n:"WAICA RE",k:["WAICA RE","WAICA_AUTO","WAICA_QS","WAICA_XOL","WAICARE"]},{n:"ZB RE",k:["ZB_AUTO","ZB_FAC","ZB_QS","ZB_RE","ZBRe_ACCESS FINANCE","ZBRE_XOL","ZBRE_XOL_2"]},{n:"ZEP RE",k:["ZEPRE","ZEPRE_AUTO","ZEPRE_QS","ZEPRE_XOL"]}]},
+ 13:{src:"receivables_usd",g:[{n:"AFC",k:["AFC","AFC MINERVA"]},{n:"BRIGHT RE",k:["BRIGHT RE","BrightOM"]},{n:"EMERITUS RE",k:["Emeritus_Auto","EMERITUS_QS","EMERITUS_XOL","EMERITUSSURP","EMULIFE"]},{n:"FBC Re",k:["FBC Re","FBC Re Auto","FBC RET FUND","FBC_QS","FBC_XOL","FBCSURP"]},{n:"First Mutual Re",k:["FIRST SURPLUS","FIRST_AUTO","FIRST_QS","FIRSTRE_XOL","FMRESURP"]},{n:"GRAND RE",k:["GRAND RE AUTO FAC 1","GRAND_QS","GRANDRE QS","GRANDRE_AUTO","GRANDRE_XOL","GRANDRECAPITOL","GRANDSURP"]},{n:"OLD MUTUAL",k:["OLD MUTUAL INSURANCE","Oldmutualcapitol"]},{n:"PANRE",k:["PANRE","SAF"]},{n:"SANTUARY INSURANCE",k:["SANTUARYINSURANCE"]},{n:"SKY",k:["SKYEMERITUS","SKYFBC","SKYFIRST","SKYGRAND","SKYTROPICA","SKYWAICA","SKYZB"]},{n:"TROPICAL",k:["TROPICAL RE/BRIGHT","TROPICAL XOL","TROPICALQS","TROPICALRE_AUTO","TROPICALSURP","TROPICALXL"]},{n:"WAICA RE",k:["WAICA","WAICA AUTOFAC","WAICA RE","WAICA XOL","WAICAQS","WAICARE","WAICASURP","WAICAXL"]},{n:"ZB RE",k:["ZB_AUTO","ZB_QS","ZBRE NON MOT USD RET","ZBRE_ACCESS FINANCE","ZBRE_XOL","ZBRESURP"]},{n:"ZEP RE",k:["ZEPRE_AUTO","ZEPRE_QS","ZEPRE_XOL","ZEPRESURP"]},{n:"Zimnat_Auto",k:["Zimnat_Auto"]}]},
+ 14:{src:"receivables_zwg",g:[{n:"Capitol",k:["capitol"]},{n:"CBZ",k:["CBZ-CAP"]},{n:"EMERITUS",k:["EMERITUS","EMERITUS_AUTO","EMERITUS_QS","EMERITUS_XL_BD","EMERITUS_XOL","EMERITUS_XOL_2"]},{n:"FBC Re",k:["FBC Re","FBC Re Auto","FBC_QS","FBC_XOL","FBC_XOL_2","FBC_XOL_BD"]},{n:"First Mutual Re",k:["FIRST","FIRST_AUTO","FIRST_QS","FIRSTRE_XOL","FIRSTRE_XOL_2","FIRSTRE_XOL_BD","FIRSTREL"]},{n:"GRAND RE",k:["GRAND","GRAND RE AUTO FAC 1","GRAND_QS","GRANDRE QS","GRANDRE_AUTO","GRANDRE_XOL","GRANDRE_XOL_2","GRANDRE_XOL_BD"]},{n:"Guy Carpenter",k:["Guy Carpenter"]},{n:"Minerva Re",k:["Minerva Re","MINERVAFARMING","MINERVA-RE"]},{n:"NICOZ DIAMOND",k:["NICOZ DIAMOND"]},{n:"TROPICAL",k:["TROP","TROPICAL","TROPICAL_QS","TROPICAL_XL_BD","TROPICAL_XOL","TROPICALRE_AUTO","TROPICALSURP"]},{n:"WAICA RE",k:["WAICA RE","WAICA_AUTO","WAICA_QS","WAICA_XOL","WAICA_XOL_BD","WAICARE"]},{n:"ZB RE",k:["ZB_AUTO","ZB_QS","ZB_RE","ZBRe_ACCESS FINANCE","ZBRE_XOL","ZBRE_XOL_2","ZBRE_XOL_BD"]},{n:"ZEP RE",k:["ZEPRE","ZEPRE_AUTO","ZEPRE_QS","ZEPRE_XOL","ZEPRE_XOL_2","ZEPRE_XOL_BD"]}]}
+};
+
+const DEFAULTS = [
+ {no:1, row:5,  title:"Brokers - Unallocated Cash US$",   ccy:"USD", party:"broker", basis:"unallocated", threshold:"gt30", sort:"signed_asc",  topn:10, layout:"topn",   confirmed:true},
+ {no:2, row:36, title:"Brokers - Unallocated Cash ZWG",   ccy:"ZWG", party:"broker", basis:"unallocated", threshold:"gt30", sort:"abs_desc",   topn:10, layout:"topn",   confirmed:true},
+ {no:3, row:67, title:"Brokers - Premium Debtors US$",    ccy:"USD", party:"broker", basis:"debtors",     threshold:"gt30", sort:"signed_desc",topn:10, layout:"topn",   confirmed:true},
+ {no:4, row:98, title:"Brokers - Premium Debtors ZWG",    ccy:"ZWG", party:"broker", basis:"debtors",     threshold:"gt30", sort:"signed_desc",topn:10, layout:"topn",   confirmed:true},
+ {no:5, row:129,title:"Direct - Premium Debtors US$",     ccy:"USD", party:"direct", basis:"debtors",     threshold:"gt30", sort:"abs_desc",   topn:10, layout:"topn",   confirmed:true},
+ {no:6, row:160,title:"Direct - Premium Debtors ZWG",     ccy:"ZWG", party:"direct", basis:"debtors",     threshold:"gt30", sort:"abs_desc",   topn:10, layout:"topn",   confirmed:true},
+ {no:7, row:191,title:"RI Payables US$ - Facultative", ccy:"USD", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:7, layout:"groups", confirmed:true},
+ {no:8, row:220,title:"RI Payables ZWG - Facultative", ccy:"ZWG", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:7, layout:"groups", confirmed:true},
+ {no:9, row:249,title:"RI Receivables US$ - Facultative", ccy:"USD", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:8, layout:"groups", confirmed:true},
+ {no:10, row:278,title:"RI Receivables ZWG - Facultative", ccy:"ZWG", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:9, layout:"groups", confirmed:true},
+ {no:11, row:308,title:"RI Payables US$ - Treaty", ccy:"USD", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:10, layout:"groups", confirmed:true},
+ {no:12, row:339,title:"RI Payables ZWG - Treaty", ccy:"ZWG", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:10, layout:"groups", confirmed:true},
+ {no:13, row:370,title:"RI Receivables US$ - Treaty", ccy:"USD", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:9, layout:"groups", confirmed:true},
+ {no:14, row:400,title:"RI Receivables ZWG - Treaty", ccy:"ZWG", party:"ri", basis:"ri", threshold:"gt90", sort:"abs_desc", topn:10, layout:"groups", confirmed:true},
+ {no:16,row:461,title:"Direct Unallocated Cash ZWG",      ccy:"ZWG", party:"direct", basis:"unallocated", threshold:"gt30", sort:"abs_desc", topn:0,  layout:"branch", confirmed:false}
+];
+
+let CFG = load();
+function load(){
+  try{ const s=localStorage.getItem("zgi_tr_cfg");
+       if(s){ const o=JSON.parse(s);
+              return DEFAULTS.map(d=>Object.assign({},d,o[d.no]||{})); } }catch(e){}
+  return DEFAULTS.map(d=>Object.assign({},d));
+}
+function save(){
+  const o={}; CFG.forEach(c=>o[c.no]={threshold:c.threshold,sort:c.sort,topn:c.topn});
+  try{ localStorage.setItem("zgi_tr_cfg",JSON.stringify(o)); }catch(e){}
+}
+const sec = n => CFG.find(c=>c.no===n);
+
+/* ---------------- state ---------------- */
+const S = { files:[], tplBuf:null, tplName:"", wb:null,
+             cur:[], prv:[], ri:[], riPrv:[], data:{}, sel:null, outBlob:null };
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const el = (t,c,x) => { const n=document.createElement(t); if(c)n.className=c;
+                        if(x!==undefined)n.textContent=x; return n; };
+const nz = v => { if(v===null||v===undefined||v==="")return 0;
+                  if(typeof v==="number")return v;
+                  if(typeof v==="object"&&v.result!==undefined)return Number(v.result)||0;
+                  const f=parseFloat(String(v).replace(/,/g,"")); return isNaN(f)?0:f; };
+const money = v => (v<0?"("+Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+")"
+                       : v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const iso = d => d.toISOString().slice(0,10);
+
+/* =========================================================================
+   Reading an export
+   ========================================================================= */
+function parseExport(ws, file){
+  let banner="", ccyRow="", r4=[], rows=[], warn=[];
+  ws.eachRow({includeEmpty:false},(row,n)=>{
+    if(n===1){ let p=[]; for(let c=1;c<=6;c++) p.push(String(row.getCell(c).value??""));
+               banner=p.join(" ").toLowerCase(); return; }
+    if(n===3){ ccyRow=String(row.getCell(1).value??"").toLowerCase(); return; }
+    if(n===4){ for(let c=1;c<=12;c++)
+                 r4.push(String(row.getCell(c).value??"").replace(/\s+/g," ").trim().toLowerCase());
+               return; }
+    if(n<5) return;
+    const v=[]; for(let c=1;c<=12;c++) v.push(row.getCell(c).value);
+    if(v.every(x=>x===null||x===undefined||x==="")) return;
+    const rec=[String(v[0]??"").trim(), String(v[1]??"").trim()];
+    for(let i=2;i<12;i++) rec.push(nz(v[i]));
+    if(!rec[0]) return;
+    rows.push(rec);
+  });
+
+  if(r4.join("|")!==GOOD_R4.join("|"))
+    warn.push("Row 4 headings are distorted. Columns were read by position instead.");
+
+  const bad=[];
+  rows.forEach(r=>{
+    let t=0; for(let i=B0;i<12;i++) t+=r[i];
+    if(Math.abs(r[4]+t-r[3])>0.01) bad.push(r[0]);
+  });
+  if(bad.length) warn.push(bad.length+" account"+(bad.length>1?"s do":" does")+
+    " not foot to Account Balance: "+bad.slice(0,8).join(", ")+(bad.length>8?"…":"")+
+    ". These flow into the totals as they stand.");
+
+  // identity
+  const fn = file.name.toLowerCase();
+  const ccy = /zwg/.test(ccyRow)?"ZWG" : /usd/.test(ccyRow)?"USD"
+            : /zwg/.test(fn)?"ZWG" : /usd/.test(fn)?"USD" : null;
+  let basis = /unallocated cash/.test(banner)?"unallocated"
+            : /premium & claim/.test(banner)?"debtors"
+            : /unalloc/.test(fn)?"unallocated" : /debtor/.test(fn)?"debtors" : null;
+  let party = /broker age analysis/.test(banner)?"broker"
+            : /corporate client/.test(banner)?"direct"
+            : /broker/.test(fn)?"broker"
+            : /(direct|corporate)/.test(fn)?"direct" : null;
+  if(/(facultative|treaty|reinsur|\bri\b)/.test(fn)) party="ri";
+
+  const m = banner.match(/as at\s+\w+,?\s+(\d{1,2}\s+\w+\s+\d{4})/);
+  const asat = m ? new Date(m[1]+" UTC") : null;
+
+  const guess = CFG.find(c=>c.ccy===ccy && c.party===party && c.basis===basis);
+  return {name:file.name, rows, warn, ccy, party, basis, asat,
+          secNo: guess?guess.no:0};
+}
+
+/* =========================================================================
+   Reading a reinsurance pivot
+   ========================================================================= */
+function parsePivot(ws, file){
+  let hdrRow = 0, col = {}, rows = {}, order = [], warn = [];
+  ws.eachRow({includeEmpty:false},(row,n)=>{
+    const first = String(row.getCell(1).value ?? '').trim();
+    if(!hdrRow){
+      if(first.toLowerCase() === 'row labels'){
+        hdrRow = n;
+        for(let c=2;c<=row.cellCount;c++){
+          const h = String(row.getCell(c).value ?? '').replace(/\s+/g,' ').trim();
+          const i = RI_BUCKETS.findIndex(b=>b.replace(/\s+/g,' ') === h);
+          if(i>=0) col[i]=c;
+        }
+      }
+      return;
+    }
+    if(!first || first.toLowerCase()==='grand total') return;
+    const v=[];
+    for(let i=0;i<7;i++) v.push(col[i]!==undefined ? nz(row.getCell(col[i]).value) : 0);
+    if(rows[first]){ for(let i=0;i<7;i++) rows[first][i]+=v[i]; }
+    else { rows[first]=v; order.push(first); }
+  });
+
+  if(!hdrRow) throw new Error('No "Row Labels" header row found.');
+  const missing = RI_BUCKETS.filter((_,i)=>col[i]===undefined);
+  if(missing.length)
+    warn.push('The pivot has no column for '+missing.join(', ')+
+              '. Excel drops an empty bucket, so these were read as zero rather than '+
+              'shifting the other columns across.');
+
+  const fn = file.name.toLowerCase();
+  const dir = /payable/.test(fn) ? 'payables' : /receivable/.test(fn) ? 'receivables' : null;
+  const ccy = /zwg/.test(fn) ? 'zwg' : /usd/.test(fn) ? 'usd' : null;
+  return {name:file.name, rows, order, warn,
+          src: (dir&&ccy) ? dir+'_'+ccy : ''};
+}
+
+/* Build one RI section from a pivot using the frozen mapping. */
+function riSection(no, piv, prevPiv){
+  const cf = sec(no), map = RI_MAP[no];
+  const cur = [0,0,0,0,0,0,0];
+  const seen = new Set(), absent = [];
+  const groups = [];
+
+  map.g.forEach(gr=>{
+    const v=[0,0,0,0,0,0,0];
+    gr.k.forEach(k=>{
+      seen.add(k);
+      const r = piv.rows[k];
+      if(!r){ absent.push(k); return; }
+      for(let i=0;i<7;i++){ v[i]+=r[i]; cur[i]+=r[i]; }
+    });
+    groups.push({code:gr.n, v:v.slice(3).reduce((a,b)=>a+b,0)});
+  });
+
+  if(prevPiv){
+    map.g.forEach((gr,i)=>{
+      let p=0;
+      gr.k.forEach(k=>{ const r=prevPiv.rows[k]; if(r) p+=r[3]+r[4]+r[5]+r[6]; });
+      groups[i].prev=p;
+    });
+  }
+  groups.forEach(g=>{ if(g.prev===undefined) g.prev=0; g.diff=g.v-g.prev; });
+  groups.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+
+  const warn = [];
+  if(absent.length)
+    warn.push(absent.length+' mapped account'+(absent.length>1?'s are':' is')+
+      ' not in this pivot: '+absent.slice(0,8).join(', ')+(absent.length>8?'…':'')+
+      '. Treated as zero.');
+
+  return {cfg:cf, cur, total:cur.reduce((a,b)=>a+b,0),
+          top:groups.slice(0,cf.topn), allGroups:groups, warn,
+          hasPrev:!!prevPiv, prevAging:null, accounts:seen.size,
+          file:piv.name, comment:null, keys:seen};
+}
+
+/* =========================================================================
+   Section maths
+   ========================================================================= */
+const aging = rows => BUCKETS.map((_,i)=>rows.reduce((a,r)=>a+r[B0+i],0));
+const scoreOf = (r,th) => (th==="gt90"?GT90:GT30).reduce((a,i)=>a+r[i],0);
+
+function topN(rows, th, sort, n){
+  const s = rows.map(r=>({code:r[0], name:r[1], v:scoreOf(r,th)}));
+  if(sort==="signed_asc")       s.sort((a,b)=>a.v-b.v);
+  else if(sort==="signed_desc") s.sort((a,b)=>b.v-a.v);
+  else                          s.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+  return s.slice(0,n);
+}
+
+function build(){
+  S.data = {};
+  const prvBy = {}; S.prv.forEach(p=>{ if(p.secNo) prvBy[p.secNo]=p; });
+
+  S.cur.forEach(c=>{
+    if(!c.secNo) return;
+    const cf = sec(c.secNo);
+    const cur = aging(c.rows);
+    const p   = prvBy[c.secNo];
+    const top = topN(c.rows, cf.threshold, cf.sort, cf.topn);
+
+    let lookup = null;
+    if(p){ lookup={}; p.rows.forEach(r=>{ lookup[r[0]] = scoreOf(r, cf.threshold); }); }
+    top.forEach(t=>{ t.prev = lookup ? (lookup[t.code]||0) : 0; t.diff = t.v-t.prev; });
+
+    S.data[c.secNo] = {
+      cfg:cf, cur, total:cur.reduce((a,b)=>a+b,0), top,
+      warn:c.warn.slice(), hasPrev:!!p,
+      prevAging: p?aging(p.rows):null,
+      accounts:c.rows.length, file:c.name, comment:null
+    };
+    if(!p) S.data[c.secNo].warn.push(
+      "Last week's export for this section was not loaded, so the prior-week column of the Top 10 reads zero.");
+  });
+
+  // ---- reinsurance sections, two per pivot -----------------------------
+  const prvRi = {}; S.riPrv.forEach(p=>{ if(p.src) prvRi[p.src]=p; });
+  S.ri.forEach(p=>{
+    if(!p.src) return;
+    const secs = Object.keys(RI_MAP).map(Number).filter(n=>RI_MAP[n].src===p.src);
+    const built = secs.map(n=>[n, riSection(n, p, prvRi[p.src]||null)]);
+
+    // keys claimed by both halves of the same pivot are counted twice
+    if(built.length===2){
+      const [a,b]=built;
+      const dup=[...a[1].keys].filter(k=>b[1].keys.has(k));
+      if(dup.length){
+        let amt=0;
+        dup.forEach(k=>{ const r=p.rows[k]; if(r) amt+=r.reduce((x,y)=>x+y,0); });
+        const note=dup.length+' account'+(dup.length>1?'s appear':' appears')+
+          ' in both the facultative and treaty mapping for this pivot ('+
+          dup.join(', ')+'), worth '+money(amt)+' in total. It is included in both sections.';
+        a[1].warn.push(note); b[1].warn.push(note);
+      }
+    }
+
+    // pivot rows claimed by neither half fall out of the report
+    const claimed=new Set(); built.forEach(([,d])=>d.keys.forEach(k=>claimed.add(k)));
+    const orphan=p.order.filter(k=>!claimed.has(k));
+    if(orphan.length){
+      let amt=0; orphan.forEach(k=>{ amt+=p.rows[k].reduce((x,y)=>x+y,0); });
+      if(Math.abs(amt)>0.005){
+        const note=orphan.length+' row'+(orphan.length>1?'s in':' in')+
+          ' this pivot are in neither mapping, worth '+money(amt)+
+          ' which does not reach the report: '+orphan.slice(0,6).join(', ')+
+          (orphan.length>6?'…':'');
+        built.forEach(([,d])=>d.warn.push(note));
+      }
+    }
+    built.forEach(([n,d])=>{ S.data[n]=d; if(!prvRi[p.src])
+      d.warn.push("Last week's pivot was not loaded, so the prior-week column reads zero."); });
+  });
+}
+
+/* =========================================================================
+   Step 1 - one drop zone, everything identified on open
+   ========================================================================= */
+function wire(dropId, inputId){
+  const d=$("#"+dropId), i=$("#"+inputId);
+  d.addEventListener("dragover",e=>{e.preventDefault();d.classList.add("hot")});
+  d.addEventListener("dragleave",()=>d.classList.remove("hot"));
+  d.addEventListener("drop",e=>{e.preventDefault();d.classList.remove("hot");
+    i.files=e.dataTransfer.files; i.dispatchEvent(new Event("change"))});
+}
+document.querySelectorAll("[data-for]").forEach(b=>
+  b.addEventListener("click",()=>$("#"+b.dataset.for).click()));
+wire("dropAll","fAll");
+
+/* Open a workbook once and work out what it is. */
+async function ingest(file){
+  const buf = await file.arrayBuffer();
+  const wb  = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf.slice(0));
+
+  if(wb.getWorksheet("Tech. Report"))
+    return {kind:"report", file, name:file.name, buf, wb};
+
+  const ag = wb.getWorksheet("Aging");
+  if(ag && wb.worksheets.some(w=>/dashboard/i.test(w.title)))
+    return {kind:"legacy", file, name:file.name};
+  if(ag){
+    let isPivot=false;
+    ag.eachRow({includeEmpty:false},(r,n)=>{
+      if(n<=6 && String(r.getCell(1).value??"").trim().toLowerCase()==="row labels") isPivot=true;
+    });
+    if(isPivot) return Object.assign({kind:"pivot", file}, parsePivot(ag, file));
+  }
+  return Object.assign({kind:"export", file}, parseExport(wb.worksheets[0], file));
+}
+
+$("#fAll").addEventListener("change", async e=>{
+  const files=[...e.target.files]; if(!files.length) return;
+  $("#fileTable").innerHTML='<p class="hint">Opening '+files.length+' file'+
+    (files.length>1?"s":"")+'&hellip;</p>';
+  for(const f of files){
+    try{ S.files.push(await ingest(f)); }
+    catch(err){ S.files.push({kind:"bad", file:f, name:f.name,
+                              warn:["Could not be opened: "+err.message]}); }
+  }
+  assignWeeks(); derive(); renderFiles(); gate();
+});
+
+/* Later date is this week, earlier is last week. SIRIUS exports carry their
+   own as-at date; pivots do not, so those fall back to the file timestamp. */
+function assignWeeks(){
+  const bucket={};
+  S.files.forEach(f=>{
+    if(f.kind==="export"&&f.secNo) (bucket["e"+f.secNo]=bucket["e"+f.secNo]||[]).push(f);
+    if(f.kind==="pivot"&&f.src)    (bucket["p"+f.src] =bucket["p"+f.src] ||[]).push(f);
+  });
+  Object.values(bucket).forEach(list=>{
+    if(list.length===1){ if(!list[0].week) list[0].week="cur"; return; }
+    list.sort((a,b)=>{
+      const ad=a.asat?+a.asat:(a.file?a.file.lastModified:0);
+      const bd=b.asat?+b.asat:(b.file?b.file.lastModified:0);
+      return bd-ad;
+    });
+    list.forEach((f,i)=>{ if(!f.week) f.week = i===0?"cur":"prv"; });
+  });
+  const dates=S.files.filter(f=>f.kind==="export"&&f.week==="cur"&&f.asat)
+                     .map(f=>f.asat).sort((a,b)=>b-a);
+  if(dates.length && !$("#weekEnd").value){
+    const e=new Date(dates[0]); e.setUTCDate(e.getUTCDate()-3);
+    const p=new Date(e);        p.setUTCDate(p.getUTCDate()-7);
+    $("#weekEnd").value=iso(e); $("#weekPrev").value=iso(p);
+  }
+}
+
+/* Fill the arrays the rest of the tool already works from. */
+function derive(){
+  S.cur=[]; S.prv=[]; S.ri=[]; S.riPrv=[];
+  S.files.forEach(f=>{
+    if(f.kind==="report"){ S.tplBuf=f.buf; S.tplName=f.name; S.wb=f.wb; }
+    else if(f.kind==="export"&&f.secNo) (f.week==="prv"?S.prv:S.cur).push(f);
+    else if(f.kind==="pivot"&&f.src)    (f.week==="prv"?S.riPrv:S.ri).push(f);
+  });
+}
+
+function describe(f){
+  if(f.kind==="report") return "Last week's Technical Report";
+  if(f.kind==="legacy") return "Mapping workbook \u2014 not needed, the mapping is built in";
+  if(f.kind==="bad")    return "\u2014";
+  if(f.kind==="pivot"){
+    if(!f.src) return "Reinsurance pivot";
+    const s=Object.keys(RI_MAP).filter(n=>RI_MAP[n].src===f.src)
+             .map(n=>String(n).padStart(2,"0")).join(" + ");
+    return RI_SOURCES[f.src]+"  \u2192  sections "+s;
+  }
+  if(!f.secNo) return "Age analysis export";
+  const c=sec(f.secNo);
+  return "Section "+String(c.no).padStart(2,"0")+"  "+c.title;
+}
+
+function renderFiles(){
+  const box=$("#fileTable");
+  if(!S.files.length){ box.innerHTML=""; $("#weekCard").style.display="none"; return; }
+  $("#weekCard").style.display="";
+
+  const t=el("table");
+  t.innerHTML="<thead><tr><th>File</th><th>Rows</th><th>Identified as</th>"+
+              "<th>Week</th><th>Status</th><th></th></tr></thead>";
+  const tb=el("tbody");
+
+  S.files.forEach((f,idx)=>{
+    const tr=el("tr");
+    tr.appendChild(el("td")).appendChild(el("span","fname",f.name));
+
+    const n = f.kind==="export" ? (f.rows||[]).length
+            : f.kind==="pivot"  ? (f.order||[]).length : 0;
+    tr.appendChild(el("td","num", n?n.toLocaleString():"\u2014"));
+
+    // what it is - editable for data files, fixed for the report
+    const td=el("td");
+    if(f.kind==="report"||f.kind==="bad"||f.kind==="legacy"){ td.textContent=describe(f); }
+    else{
+      const s=el("select");
+      s.appendChild(new Option("\u2014 not used \u2014",""));
+      if(f.kind==="export"){
+        CFG.filter(c=>c.layout!=="groups").forEach(c=>{
+          const taken=S.files.some(x=>x!==f&&x.kind==="export"&&x.secNo===c.no&&x.week===f.week);
+          const o=new Option(String(c.no).padStart(2,"0")+"  "+c.title,String(c.no));
+          if(taken) o.disabled=true;
+          s.appendChild(o);
+        });
+        s.value=String(f.secNo||"");
+        s.onchange=()=>{ f.secNo=+s.value||0; derive(); renderFiles(); gate(); };
+      }else{
+        Object.keys(RI_SOURCES).forEach(k=>{
+          const taken=S.files.some(x=>x!==f&&x.kind==="pivot"&&x.src===k&&x.week===f.week);
+          const ss=Object.keys(RI_MAP).filter(n=>RI_MAP[n].src===k)
+                    .map(n=>String(n).padStart(2,"0")).join(" + ");
+          const o=new Option(RI_SOURCES[k]+"  \u2192  "+ss,k);
+          if(taken) o.disabled=true;
+          s.appendChild(o);
+        });
+        s.value=f.src||"";
+        s.onchange=()=>{ f.src=s.value; derive(); renderFiles(); gate(); };
+      }
+      td.appendChild(s);
+    }
+    tr.appendChild(td);
+
+    // week
+    const wd=el("td");
+    if(f.kind==="report"||f.kind==="bad"||f.kind==="legacy"){ wd.textContent="\u2014"; }
+    else{
+      const w=el("select");
+      w.appendChild(new Option("This week","cur"));
+      w.appendChild(new Option("Last week","prv"));
+      w.value=f.week||"cur";
+      w.onchange=()=>{ f.week=w.value; derive(); renderFiles(); gate(); };
+      wd.appendChild(w);
+    }
+    tr.appendChild(wd);
+
+    const st=el("td");
+    if(f.kind==="bad")                         st.appendChild(el("span","tag bad","Unreadable"));
+    else if(f.kind==="legacy")                 st.appendChild(el("span","tag idle","Skipped"));
+    else if(f.kind==="report")                 st.appendChild(el("span","tag ok","Template"));
+    else if(!(f.secNo||f.src))                 st.appendChild(el("span","tag idle","Not matched"));
+    else if((f.warn||[]).length)               st.appendChild(el("span","tag warn","Notice"));
+    else                                       st.appendChild(el("span","tag ok","Ready"));
+    tr.appendChild(st);
+
+    const rm=el("td"), x=el("button","x","\u00d7");
+    x.title="Remove"; x.style.fontSize="17px";
+    x.onclick=()=>{ S.files.splice(idx,1); derive(); renderFiles(); gate(); };
+    rm.appendChild(x); tr.appendChild(rm);
+
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb); box.innerHTML=""; box.appendChild(t);
+
+  const un=S.files.filter(f=>f.kind!=="report"&&f.kind!=="bad"&&f.kind!=="legacy"&&!(f.secNo||f.src)).length;
+  if(un){
+    const p=el("p","hint",un+" file"+(un>1?"s":"")+
+      " could not be matched. Pick from the list, or leave it out.");
+    p.style.marginTop="10px"; box.appendChild(p);
+  }
+}
+
+function gate(){
+  const n=S.cur.filter(o=>o.secNo).length + S.ri.filter(o=>o.src).length*2;
+  const ok=!!S.wb && n>0;
+  $("#toValidate").disabled=!ok;
+  $("#p0hint").textContent = !S.files.length ? "Drop your files above to begin."
+    : !S.wb ? "Add last week's Technical Report \u2014 it is the template."
+    : n===0 ? "No sections matched yet."
+    : n+" section"+(n>1?"s":"")+" ready to write.";
+}
+
+/* =========================================================================
+   Step 2 UI
+   ========================================================================= */
+function renderValidate(){
+  build();
+  const list=$("#secList"); list.innerHTML="";
+  CFG.forEach(c=>{
+    const d=S.data[c.no];
+    const b=el("button");
+    b.appendChild(el("span","idx",String(c.no).padStart(2,"0")));
+    b.appendChild(el("span","nm",c.title));
+    const dot=el("span","dot"+(d?(d.warn.length?" part":" on"):""));
+    b.appendChild(dot);
+    if(!d) b.style.opacity=".55";
+    b.addEventListener("click",()=>{ S.sel=c.no; renderValidate(); });
+    if(S.sel===c.no) b.classList.add("sel");
+    list.appendChild(b);
+  });
+  if(S.sel===null || !S.data[S.sel]){
+    const first=CFG.find(c=>S.data[c.no]);
+    S.sel = first?first.no:null;
+    if(S.sel!==null) return renderValidate();
+  }
+  renderDetail();
+}
+
+function renderDetail(){
+  const box=$("#secDetail"); box.innerHTML="";
+  if(S.sel===null){ box.innerHTML='<div class="card"><div class="body hint">'+
+      'No exports loaded.</div></div>'; return; }
+  const d=S.data[S.sel], c=d.cfg;
+
+  const card=el("div","card");
+  card.appendChild(el("h2",null,String(c.no).padStart(2,"0")+"  ·  "+c.title));
+  const body=el("div","body"); card.appendChild(body);
+
+  body.appendChild(el("p","hint",
+    c.layout==="groups"
+      ? d.accounts.toLocaleString()+" mapped accounts in "+d.allGroups.length+
+        " groups, from "+d.file
+      : d.accounts.toLocaleString()+" accounts read from "+d.file));
+  body.lastChild.style.margin="0 0 14px";
+
+  if(d.warn.length){
+    const n=el("div","notes warn");
+    n.appendChild(el("strong",null,"Check before signing off"));
+    const ul=el("ul"); d.warn.forEach(w=>ul.appendChild(el("li",null,w)));
+    n.appendChild(ul); body.appendChild(n);
+  }
+
+  // aging
+  const t=el("table");
+  let h="<thead><tr><th>Aging</th>";
+  BUCKETS.forEach(b=>h+="<th style='text-align:right'>"+b+"</th>");
+  h+="<th style='text-align:right'>Total</th></tr></thead>";
+  t.innerHTML=h;
+  const tb=el("tbody");
+  const line=(lab,vals)=>{
+    const tr=el("tr"); tr.appendChild(el("td",null,lab));
+    let s=0; vals.forEach(v=>{ s+=v; const td=el("td","num"+(v<0?" neg":""),money(v)); tr.appendChild(td); });
+    tr.appendChild(el("td","num"+(s<0?" neg":""),money(s)));
+    tb.appendChild(tr);
+  };
+  line("This week", d.cur);
+  if(d.prevAging) line("Last week", d.prevAging);
+  t.appendChild(tb); body.appendChild(t);
+
+  const nyd=el("p","hint","Not Yet Due is excluded from these totals, as in the published report.");
+  nyd.style.margin="10px 0 20px"; body.appendChild(nyd);
+
+  // reinsurer groups
+  if(c.layout==="groups"){
+    body.appendChild(el("h3",null,"Reinsurer groups, over 90 days"));
+    body.lastChild.style.cssText="font-size:13px;margin-bottom:3px";
+    const sub=el("p","hint",
+      d.allGroups.length+" groups from the frozen mapping, ranked by size. "+
+      "The report carries the top "+c.topn+".");
+    sub.style.margin="0 0 10px"; body.appendChild(sub);
+    const t2=el("table");
+    t2.innerHTML="<thead><tr><th>#</th><th>Group</th>"+
+      "<th style='text-align:right'>Last week</th><th style='text-align:right'>This week</th>"+
+      "<th style='text-align:right'>Difference</th></tr></thead>";
+    const tb2=el("tbody");
+    d.allGroups.forEach((r,i)=>{
+      const tr=el("tr");
+      if(i>=c.topn) tr.style.opacity=".45";
+      tr.appendChild(el("td","num",String(i+1)));
+      tr.appendChild(el("td",null,r.code));
+      tr.appendChild(el("td","num"+(r.prev<0?" neg":""),money(r.prev)));
+      tr.appendChild(el("td","num"+(r.v<0?" neg":""),money(r.v)));
+      tr.appendChild(el("td","num"+(r.diff<0?" neg":""),money(r.diff)));
+      tb2.appendChild(tr);
+    });
+    t2.appendChild(tb2); body.appendChild(t2);
+  }
+  // top N
+  else if(c.layout==="topn" && c.topn>0){
+    const lbl = c.threshold==="gt90" ? "over 90 days" : "over 30 days";
+    const rule = c.sort==="signed_asc" ? "most negative first"
+               : c.sort==="signed_desc" ? "largest positive first" : "largest by size";
+    body.appendChild(el("h3",null,"Top "+c.topn+" "+lbl));
+    body.lastChild.style.cssText="font-size:13px;margin-bottom:3px";
+    const sub=el("p","hint",rule+(c.confirmed?"":" — provisional, not yet checked against a published week"));
+    sub.style.margin="0 0 10px"; body.appendChild(sub);
+
+    const t2=el("table");
+    t2.innerHTML="<thead><tr><th>#</th><th>A/CCode</th>"+
+      "<th style='text-align:right'>Last week</th><th style='text-align:right'>This week</th>"+
+      "<th style='text-align:right'>Difference</th></tr></thead>";
+    const tb2=el("tbody");
+    d.top.forEach((r,i)=>{
+      const tr=el("tr");
+      tr.appendChild(el("td","num",String(i+1)));
+      tr.appendChild(el("td",null,r.code));
+      tr.appendChild(el("td","num"+(r.prev<0?" neg":""),money(r.prev)));
+      tr.appendChild(el("td","num"+(r.v<0?" neg":""),money(r.v)));
+      tr.appendChild(el("td","num"+(r.diff<0?" neg":""),money(r.diff)));
+      tb2.appendChild(tr);
+    });
+    t2.appendChild(tb2); body.appendChild(t2);
+  } else {
+    const n=el("div","notes warn");
+    n.textContent="This section carries a branch table rather than a Top 10, and the "+
+      "branch split is not present in an All-Branches export. Its figures are written, "+
+      "but the branch table is left as last week's until the per-branch exports are mapped.";
+    body.appendChild(n);
+  }
+
+  // commentary
+  const cw=el("div"); cw.style.marginTop="20px";
+  cw.appendChild(el("label",null,"Comments"));
+  cw.lastChild.style.cssText="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px";
+  const ta=el("textarea"); ta.style.width="100%";
+  ta.value = d.comment!==null ? d.comment : readComment(c.row);
+  ta.addEventListener("input",()=>{ d.comment=ta.value; });
+  d.comment = ta.value;
+  cw.appendChild(ta);
+  const ch=el("p","hint","Carried over from last week's report. Edit before generating.");
+  ch.style.margin="6px 0 0"; cw.appendChild(ch);
+  body.appendChild(cw);
+
+  box.appendChild(card);
+}
+
+function readComment(row){
+  try{ const v=S.wb.getWorksheet("Tech. Report").getCell(row+1,12).value;
+       if(v===null||v===undefined) return "";
+       if(typeof v==="object"&&v.richText) return v.richText.map(x=>x.text).join("");
+       return String(v); }catch(e){ return ""; }
+}
+
+/* =========================================================================
+   Step 3 — write the workbook
+   ========================================================================= */
+/* Excel stores a cached answer next to every formula. Overwriting a formula's
+   inputs does not update that cache, so a workbook written by a library shows
+   last week's totals until Excel recalculates. Two safeguards: drop every
+   cached result so there is nothing stale to display, and ask Excel to do a
+   full calculation when the file opens. */
+function decache(ws){
+  ws.eachRow({includeEmpty:false},row=>{
+    row.eachCell({includeEmpty:false},cell=>{
+      const v=cell.value;
+      if(!v || typeof v!=="object") return;
+      if(v.formula!==undefined){
+        const o={formula:v.formula, result:undefined};
+        if(v.ref) o.ref=v.ref;
+        if(v.shareType) o.shareType=v.shareType;
+        cell.value=o;
+      }else if(v.sharedFormula!==undefined){
+        cell.value={sharedFormula:v.sharedFormula, result:undefined};
+      }
+    });
+  });
+}
+
+async function generate(){
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(S.tplBuf.slice(0));
+  const ws = wb.getWorksheet("Tech. Report");
+
+  const end  = new Date($("#weekEnd").value+"T00:00:00Z");
+  const prev = new Date($("#weekPrev").value+"T00:00:00Z");
+  const fmt = d => d.toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric",timeZone:"UTC"});
+
+  // Section 1 holds the master dates; every other section points at row 8.
+  ws.getCell(8,4).value  = ws.getCell(8,5).value;   // shift D..I left one week
+  ws.getCell(8,5).value  = ws.getCell(8,6).value;
+  ws.getCell(8,6).value  = ws.getCell(8,7).value;
+  ws.getCell(8,7).value  = ws.getCell(8,8).value;
+  ws.getCell(8,8).value  = ws.getCell(8,9).value;
+  ws.getCell(8,9).value  = prev;
+  ws.getCell(11,3).value = "Aging as of "+fmt(end);
+  ws.getCell(15,3).value = "Aging as of "+fmt(prev);
+  ws.getCell(20,7).value = prev;                     // Top 10 comparative header
+
+  const written=[];
+  CFG.forEach(c=>{
+    const d=S.data[c.no]; if(!d) return;
+    const r=c.row;
+
+    // Read everything that is about to move BEFORE writing anything, and take
+    // last week's total by adding its buckets rather than trusting the cached
+    // SUM in column J, which may be stale.
+    const lastAging = [];
+    for(let i=0;i<7;i++) lastAging.push(nz(ws.getCell(r+8,3+i).value));
+    const lastTotal = lastAging.reduce((a,b)=>a+b,0);
+    const hist = [];
+    for(let col=5; col<=9; col++) hist.push(nz(ws.getCell(r+4,col).value));
+
+    // weekly movement: shift the history left one week, last week's total lands in I
+    for(let i=0;i<5;i++) ws.getCell(r+4,4+i).value = hist[i];
+    ws.getCell(r+4,9).value = lastTotal;
+
+    // prior aging row <- last week's current aging
+    for(let i=0;i<7;i++) ws.getCell(r+12,3+i).value = lastAging[i];
+    // current aging row
+    for(let i=0;i<7;i++) ws.getCell(r+8,3+i).value = d.cur[i];
+
+    // commentary
+    if(d.comment!==null) ws.getCell(r+1,12).value = d.comment;
+
+    // Top N  (accounts, or reinsurer groups for the RI sections)
+    if((c.layout==="topn"||c.layout==="groups") && c.topn>0){
+      for(let i=0;i<c.topn;i++){
+        const rr=r+16+i, t=d.top[i];
+        ws.getCell(rr,4).value = t?t.code:null;
+        ws.getCell(rr,7).value = t?t.prev:null;
+        ws.getCell(rr,8).value = t?t.v:null;
+      }
+    }
+    written.push(c);
+  });
+
+  decache(ws);
+  wb.calcProperties = wb.calcProperties || {};
+  wb.calcProperties.fullCalcOnLoad = true;
+
+  S.outBlob = new Blob([await wb.xlsx.writeBuffer()],
+    {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+
+  const skipped = CFG.filter(c=>!S.data[c.no]);
+  $("#outStats").innerHTML="";
+  const stat=(k,v)=>{ const s=el("div","stat"); s.appendChild(el("div","k",k));
+                      s.appendChild(el("div","v",v)); $("#outStats").appendChild(s); };
+  stat("Week ending", fmt(end));
+  stat("Sections written", String(written.length)+" of 16");
+  stat("Carried forward", String(skipped.length));
+  stat("Notices raised", String(Object.values(S.data).reduce((a,d)=>a+d.warn.length,0)));
+
+  const ol=$("#outList"); ol.innerHTML="";
+  const t=el("table");
+  t.innerHTML="<thead><tr><th>#</th><th>Section</th><th style='text-align:right'>Total</th><th>Status</th></tr></thead>";
+  const tb=el("tbody");
+  CFG.forEach(c=>{
+    const d=S.data[c.no], tr=el("tr");
+    tr.appendChild(el("td","num",String(c.no).padStart(2,"0")));
+    tr.appendChild(el("td",null,c.title));
+    tr.appendChild(el("td","num"+(d&&d.total<0?" neg":""), d?money(d.total):"—"));
+    const st=el("td");
+    st.appendChild(el("span","tag "+(d?(d.warn.length?"warn":"ok"):"idle"),
+      d?(d.warn.length?"Written, with notices":"Written"):"Last week's figures kept"));
+    tr.appendChild(st); tb.appendChild(tr);
+  });
+  t.appendChild(tb); ol.appendChild(t);
+
+  $("#dlState").textContent="Ready. "+written.length+" section"+(written.length>1?"s":"")+" written.";
+}
+
+$("#dlBtn").addEventListener("click",()=>{
+  if(!S.outBlob) return;
+  const d=$("#weekEnd").value.replace(/-/g,"_");
+  const a=el("a"); a.href=URL.createObjectURL(S.outBlob);
+  a.download="ZGI_Tech_Report_"+d+".xlsx"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
+
+/* =========================================================================
+   Navigation
+   ========================================================================= */
+function go(n){
+  document.querySelectorAll(".panel").forEach((p,i)=>p.classList.toggle("on",i===n));
+  document.querySelectorAll(".step").forEach((s,i)=>{
+    s.classList.toggle("active",i===n); s.classList.toggle("done",i<n); });
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("[data-goto]").forEach(b=>
+  b.addEventListener("click",()=>go(+b.dataset.goto)));
+$("#toValidate").addEventListener("click",()=>{ renderValidate(); go(1); });
+$("#toDownload").addEventListener("click",async()=>{
+  $("#toDownload").disabled=true; $("#toDownload").textContent="Generating…";
+  try{ await generate(); go(2); }
+  catch(err){ alert("The report could not be generated.\n\n"+err.message); }
+  $("#toDownload").disabled=false; $("#toDownload").textContent="Generate report";
+});
+
+/* =========================================================================
+   Settings
+   ========================================================================= */
+function renderCfg(){
+  const t=$("#cfgTable");
+  t.innerHTML="<thead><tr><th>#</th><th>Section</th><th>Ranked on</th><th>Order</th>"+
+    "<th>Top N</th><th>Rule</th></tr></thead>";
+  const tb=el("tbody");
+  CFG.forEach(c=>{
+    const tr=el("tr");
+    tr.appendChild(el("td","num",String(c.no).padStart(2,"0")));
+    tr.appendChild(el("td",null,c.title));
+
+    const th=el("select");
+    [["gt30","Over 30 days"],["gt90","Over 90 days"]].forEach(([v,l])=>
+      th.appendChild(new Option(l,v)));
+    th.value=c.threshold; th.onchange=()=>c.threshold=th.value;
+    tr.appendChild(el("td")).appendChild(th);
+
+    const so=el("select");
+    [["signed_asc","Most negative first"],["signed_desc","Largest positive first"],
+     ["abs_desc","Largest by size"]].forEach(([v,l])=>so.appendChild(new Option(l,v)));
+    so.value=c.sort; so.onchange=()=>c.sort=so.value;
+    tr.appendChild(el("td")).appendChild(so);
+
+    const n=el("input"); n.type="number"; n.min="0"; n.max="10"; n.value=c.topn;
+    n.style.width="62px"; n.onchange=()=>c.topn=Math.max(0,Math.min(10,+n.value||0));
+    tr.appendChild(el("td")).appendChild(n);
+
+    const st=el("td");
+    st.appendChild(el("span","tag "+(c.confirmed?"ok":"warn"),
+      c.confirmed?"Confirmed":"Provisional"));
+    tr.appendChild(st);
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+}
+$("#gearBtn").onclick=()=>{ renderCfg(); $("#modal").classList.add("on"); };
+$("#modalClose").onclick=()=>$("#modal").classList.remove("on");
+$("#modal").addEventListener("click",e=>{ if(e.target.id==="modal") $("#modal").classList.remove("on"); });
+$("#cfgSave").onclick=()=>{ save(); $("#modal").classList.remove("on");
+  if($("#p1").classList.contains("on")) renderValidate(); };
+$("#cfgReset").onclick=()=>{ CFG=DEFAULTS.map(d=>Object.assign({},d));
+  try{localStorage.removeItem("zgi_tr_cfg")}catch(e){} renderCfg(); };
+
+document.querySelectorAll(".step").forEach(s=>s.addEventListener("click",()=>{
+  const n=+s.dataset.step;
+  if(n===1&&!$("#toValidate").disabled) { renderValidate(); go(1); }
+  else if(n===0) go(0);
+}));
+gate();
+</script>
+</body>
+</html>

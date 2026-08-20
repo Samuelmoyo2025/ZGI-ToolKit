@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treaty Validation — Finance Ops Toolkit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root{
+    --ink:#1b2733;
+    --ink-soft:#4b5a68;
+    --paper:#f5f6f4;
+    --panel:#ffffff;
+    --line:#dfe3e0;
+    --navy:#1f3b57;
+    --navy-deep:#142838;
+    --accent:#8a5a12;
+    --accent-dark:#5c3b09;
+    --accent-soft:#fbf1de;
+    --brass:#a9793a;
+    --ok:#1e6b45;
+    --ok-bg:#e7f2ec;
+    --warn:#8a5a12;
+    --warn-bg:#fbf1de;
+    --bad:#9c2f2f;
+    --bad-bg:#f9e9e8;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:var(--sans); background:var(--paper); color:var(--ink);
+    line-height:1.45;
+  }
+  .frame{max-width:1080px; margin:0 auto; padding:0 24px 80px;}
+  header.top{
+    background:linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color:#fff;
+    padding:28px 32px;
+    margin:0 -24px 28px;
+  }
+  header.top .eyebrow{
+    font-size:11px; letter-spacing:.4px;
+  }
+  header.top .eyebrow a{color:#f0dcb8; text-decoration:none;}
+  header.top .head-row{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-top:10px;
+  }
+  header.top .title-block h1{
+    font-size:22px; margin:0 0 4px; letter-spacing:.2px; color:#fff;
+    font-weight:700;
+  }
+  header.top .title-block p{margin:0; font-size:13px; color:#efe0c4; max-width:640px;}
+  header.top .tag{
+    font-family:var(--mono); font-size:11px; color:#fff; border:1px solid rgba(255,255,255,.5);
+    padding:3px 8px; border-radius:2px; white-space:nowrap; flex:none;
+  }
+
+  .step{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    margin-bottom:18px; overflow:hidden;
+  }
+  .step-head{
+    display:flex; align-items:center; gap:12px; padding:14px 18px;
+    border-bottom:1px solid var(--line); background:#fafbfa;
+  }
+  .step-num{
+    width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+    flex:none;
+  }
+  .step-head h2{font-size:14.5px; margin:0; color:var(--navy-deep);}
+  .step-head .sub{font-size:12px; color:var(--ink-soft); margin-left:auto; text-align:right;}
+  .step-body{padding:16px 18px;}
+
+  .drop{
+    border:1.5px dashed #b9c2c8; border-radius:5px; padding:20px; text-align:center;
+    background:#fbfcfb; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.drag{border-color:var(--accent); background:#faf5ea;}
+  .drop input{display:none;}
+  .drop .hint{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+  .drop .cta{font-size:13px; font-weight:600; color:var(--accent-dark);}
+
+  .filecard{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--line);
+    border-radius:4px; background:#fbfcfb; margin-top:10px; font-size:13px;
+  }
+  .filecard .name{font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .filecard .meta{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
+  .filecard .rm{cursor:pointer; color:var(--bad); font-size:12px; border:none; background:none; font-weight:700;}
+  .filecard .badge{
+    font-family:var(--mono); font-size:10.5px; padding:2px 6px; border-radius:2px;
+    background:var(--accent); color:#fff;
+  }
+
+  .sheet-table{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+  .sheet-table th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--ink-soft); border-bottom:1px solid var(--line); padding:6px 8px;
+  }
+  .sheet-table td{padding:6px 8px; border-bottom:1px solid #eef0ee; vertical-align:middle;}
+  .sheet-table tr:last-child td{border-bottom:none;}
+  .sheet-table .sn{font-family:var(--mono); font-weight:600;}
+  .sheet-table .muted{color:var(--ink-soft); font-size:11.5px;}
+  .flag{font-size:10.5px; padding:1px 6px; border-radius:2px; font-weight:600;}
+  .flag.summary{background:var(--warn-bg); color:var(--warn);}
+  .flag.empty{background:#eee; color:#888;}
+  .flag.ok{background:var(--ok-bg); color:var(--ok);}
+
+  label.chk{display:flex; align-items:center; gap:6px; cursor:pointer;}
+  input[type=checkbox]{width:15px; height:15px; accent-color:var(--accent); cursor:pointer;}
+
+  button.primary{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:4px;
+    font-size:13.5px; font-weight:600; cursor:pointer; letter-spacing:.2px;
+  }
+  button.primary:hover{background:var(--accent-dark);}
+  button.primary:disabled{background:#b7c0c7; cursor:not-allowed;}
+  button.secondary{
+    background:#fff; color:var(--accent-dark); border:1px solid var(--accent); padding:8px 14px;
+    border-radius:4px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  button.secondary:hover{background:#eef2f5;}
+
+  .runbar{display:flex; align-items:center; gap:14px; padding:16px 18px; border-top:1px solid var(--line); background:#fafbfa;}
+  .runbar .note{font-size:12px; color:var(--ink-soft);}
+
+  .summary-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 16px;}
+  .stat .n{font-size:26px; font-weight:700; font-family:var(--mono); color:var(--navy-deep);}
+  .stat .l{font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-top:2px;}
+  .stat.ok .n{color:var(--ok);}
+  .stat.warn .n{color:var(--warn);}
+  .stat.bad .n{color:var(--bad);}
+
+  .results-tools{display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .results-tools select, .results-tools input[type=text]{
+    padding:7px 9px; border:1px solid var(--line); border-radius:4px; font-size:12.5px; font-family:var(--sans);
+  }
+  table.results{width:100%; border-collapse:collapse; font-size:12.5px; background:var(--panel); border:1px solid var(--line);}
+  table.results th{
+    text-align:left; padding:8px 10px; background:var(--accent); color:#fff; font-size:11px;
+    text-transform:uppercase; letter-spacing:.3px; position:sticky; top:0;
+  }
+  table.results td{padding:7px 10px; border-bottom:1px solid #eef0ee; font-family:var(--mono);}
+  table.results td.policy{font-family:var(--mono); font-weight:600;}
+  table.results tbody tr:hover{background:#f7f9f8;}
+  .status-pill{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:3px; font-family:var(--sans);}
+  .status-pill.OK{background:var(--ok-bg); color:var(--ok);}
+  .status-pill.OUTSTANDING{background:var(--warn-bg); color:var(--warn);}
+  .status-pill.NOTFOUND{background:var(--bad-bg); color:var(--bad);}
+  .results-scroll{max-height:480px; overflow:auto; border:1px solid var(--line); border-top:none;}
+
+  .download-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:6px; margin-top:16px;
+  }
+  .download-bar .fname{font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
+
+  .empty-state{padding:26px; text-align:center; color:var(--ink-soft); font-size:13px;}
+  footer{margin-top:36px; font-size:11px; color:#9aa5ab; text-align:center;}
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <header class="top">
+    <div class="eyebrow"><a href="index.html">&larr; Main Menu</a> &nbsp;/&nbsp; Zimnat General Insurance &nbsp;/&nbsp; Finance Operations</div>
+    <div class="head-row">
+      <div class="title-block">
+        <h1>Treaty Validation</h1>
+        <p>Reconcile treaty return policy numbers against Premium Status outstanding balances — USD and ZWG.</p>
+      </div>
+      <div class="tag">REINSURANCE</div>
+    </div>
+  </header>
+
+  <!-- STEP 1: Premium Status -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <h2>Premium Status workbook</h2>
+      <div class="sub" id="ps-sub">Not loaded</div>
+    </div>
+    <div class="step-body">
+      <div class="drop" id="ps-drop">
+        <div class="cta">Click to upload, or drag a Premium Status file here</div>
+        <div class="hint">USD or ZWG — one file at a time (Report sheet, insurance_ref / Transction_Amount / outstanding_amount / allocated_amount)</div>
+        <input type="file" id="ps-input" accept=".xlsx,.xls">
+      </div>
+      <div id="ps-card"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Returns files -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <h2>Treaty returns workbooks</h2>
+      <div class="sub" id="ret-sub">0 files loaded</div>
+    </div>
+    <div class="step-body">
+      <div class="drop" id="ret-drop">
+        <div class="cta">Click to upload, or drag one or more returns files here</div>
+        <div class="hint">Any number of files (Marsh, Minerva, others) — .xls or .xlsx</div>
+        <input type="file" id="ret-input" accept=".xlsx,.xls" multiple>
+      </div>
+      <div id="ret-files"></div>
+    </div>
+    <div class="runbar">
+      <button class="primary" id="run-btn" disabled>Run validation</button>
+      <div class="note" id="run-note">Upload a Premium Status file and at least one returns workbook to continue.</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-wrap" style="display:none;">
+    <div class="step">
+      <div class="step-head">
+        <div class="step-num">3</div>
+        <h2>Results</h2>
+        <div class="sub" id="results-sub"></div>
+      </div>
+      <div class="step-body">
+        <div class="summary-grid" id="stat-grid"></div>
+
+        <div class="results-tools">
+          <select id="filter-status">
+            <option value="ALL">All statuses</option>
+            <option value="OK">OK only</option>
+            <option value="OUTSTANDING">Outstanding only</option>
+            <option value="NOTFOUND">Not found only</option>
+          </select>
+          <input type="text" id="filter-search" placeholder="Search policy number…">
+        </div>
+        <div class="results-scroll">
+          <table class="results">
+            <thead>
+              <tr>
+                <th>Policy Number</th>
+                <th>Match Count</th>
+                <th>Transaction Amount</th>
+                <th>Outstanding Amount</th>
+                <th>Allocated Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+
+        <div class="download-bar">
+          <div>
+            <div style="font-weight:600; font-size:13px;">Download validation workbook</div>
+            <div class="fname" id="dl-fname">—</div>
+          </div>
+          <button class="primary" id="download-btn">Generate & download .xlsx</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Runs entirely in your browser — no file is uploaded anywhere. Re-run any time returns or Premium Status data changes.</footer>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------
+   State
+--------------------------------------------------------------------- */
+let premiumStatus = null;     // { fileName, currency, headers, colIdx, dataRows }
+let returnsFiles = [];        // [{ fileName, sheets:[{name, headerRowIndex, colIndex, colLetter, rows, policies:Set, included, note}] }]
+let lastResults = null;       // computed validation rows
+
+/* ---------------------------------------------------------------------
+   Helpers
+--------------------------------------------------------------------- */
+function colLetter(idx){ // 0-based -> Excel column letter
+  let s = '', n = idx + 1;
+  while(n > 0){ const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+function isPolicyNumber(v){
+  if (v === null || v === undefined) return false;
+  const s = String(v).trim();
+  if (!s) return false;
+  const parts = s.split('/');
+  if (parts.length < 4) return false;
+  const last = parts[parts.length - 1];
+  return /^\d+$/.test(last);
+}
+
+function normPolicy(v){ return String(v).trim().toUpperCase(); }
+
+function detectCurrency(fileName){
+  if (/zwg/i.test(fileName)) return 'ZWG';
+  if (/usd/i.test(fileName)) return 'USD';
+  return 'UNKNOWN';
+}
+
+function fmtNum(n){
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  return sign + abs.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function readFileAsArrayBuffer(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsArrayBuffer(file);
+  });
+}
+
+async function readWorkbook(file){
+  const buf = await readFileAsArrayBuffer(file);
+  return XLSX.read(buf, {type:'array', cellDates:true});
+}
+
+/* ---------------------------------------------------------------------
+   Premium Status parsing
+--------------------------------------------------------------------- */
+async function loadPremiumStatus(file){
+  const wb = await readWorkbook(file);
+  let sheetName = wb.SheetNames.includes('Report') ? 'Report' : null;
+
+  let headerRowIdx = -1, rows = null, ws = null;
+  const candidates = sheetName ? [sheetName] : wb.SheetNames;
+  for (const sn of candidates){
+    const testWs = wb.Sheets[sn];
+    const testRows = XLSX.utils.sheet_to_json(testWs, {header:1, raw:true, defval:null});
+    for (let r = 0; r < Math.min(10, testRows.length); r++){
+      const row = testRows[r] || [];
+      if (row.some(c => typeof c === 'string' && /insurance_ref/i.test(c))){
+        headerRowIdx = r; rows = testRows; ws = testWs; sheetName = sn; break;
+      }
+    }
+    if (headerRowIdx >= 0) break;
+  }
+
+  if (headerRowIdx < 0){
+    throw new Error('Could not find a header row containing "insurance_ref" in this workbook.');
+  }
+
+  const headers = rows[headerRowIdx];
+  const colIdx = {};
+  headers.forEach((h, i) => {
+    if (typeof h !== 'string') return;
+    const key = h.trim();
+    colIdx[key.toLowerCase()] = i;
+  });
+
+  const need = ['insurance_ref', 'transction_amount', 'outstanding_amount', 'allocated_amount'];
+  for (const k of need){
+    if (!(k in colIdx)) throw new Error(`Premium Status is missing an expected column: "${k}"`);
+  }
+
+  const dataRows = rows.slice(headerRowIdx + 1).filter(r => r && r[colIdx['insurance_ref']] !== null && String(r[colIdx['insurance_ref']]).trim() !== '');
+
+  return {
+    fileName: file.name,
+    currency: detectCurrency(file.name),
+    sheetName, headers, colIdx, dataRows
+  };
+}
+
+/* ---------------------------------------------------------------------
+   Returns workbook parsing
+--------------------------------------------------------------------- */
+async function loadReturnsFile(file){
+  const wb = await readWorkbook(file);
+  const sheets = [];
+
+  for (const sheetName of wb.SheetNames){
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+
+    let headerRowIdx = -1, colIndex = 1; // default column B
+    outer:
+    for (let r = 0; r < Math.min(10, rows.length); r++){
+      const row = rows[r] || [];
+      for (let c = 0; c < row.length; c++){
+        if (typeof row[c] === 'string' && /policy\s*number/i.test(row[c])){
+          headerRowIdx = r; colIndex = c; break outer;
+        }
+      }
+    }
+    const dataStart = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+
+    const policies = new Set();
+    for (let r = dataStart; r < rows.length; r++){
+      const row = rows[r];
+      if (!row) continue;
+      const cell = row[colIndex];
+      if (isPolicyNumber(cell)) policies.add(normPolicy(cell));
+    }
+
+    const isSummary = /summary/i.test(sheetName);
+    let note = '';
+    if (isSummary) note = 'Auto-excluded: summary sheet';
+    else if (policies.size === 0) note = 'No policy numbers detected';
+
+    sheets.push({
+      name: sheetName,
+      headerRowIdx, colIndex, colLetter: colLetter(colIndex),
+      rowCount: rows.length,
+      policies,
+      included: !isSummary,
+      note
+    });
+  }
+
+  return { fileName: file.name, sheets };
+}
+
+/* ---------------------------------------------------------------------
+   Rendering: Premium Status card
+--------------------------------------------------------------------- */
+function renderPremiumStatusCard(){
+  const card = document.getElementById('ps-card');
+  const sub = document.getElementById('ps-sub');
+  if (!premiumStatus){ card.innerHTML = ''; sub.textContent = 'Not loaded'; return; }
+  sub.textContent = `${premiumStatus.currency} · ${premiumStatus.dataRows.length.toLocaleString()} rows`;
+  card.innerHTML = `
+    <div class="filecard">
+      <span class="badge">${premiumStatus.currency}</span>
+      <span class="name">${premiumStatus.fileName}</span>
+      <span class="meta">sheet "${premiumStatus.sheetName}" · ${premiumStatus.dataRows.length.toLocaleString()} rows</span>
+      <button class="rm" onclick="removePremiumStatus()">Remove</button>
+    </div>`;
+}
+function removePremiumStatus(){ premiumStatus = null; renderPremiumStatusCard(); updateRunState(); }
+
+/* ---------------------------------------------------------------------
+   Rendering: Returns files
+--------------------------------------------------------------------- */
+function renderReturnsFiles(){
+  const wrap = document.getElementById('ret-files');
+  const sub = document.getElementById('ret-sub');
+  sub.textContent = `${returnsFiles.length} file${returnsFiles.length === 1 ? '' : 's'} loaded`;
+
+  if (returnsFiles.length === 0){ wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = returnsFiles.map((f, fi) => {
+    const totalPolicies = f.sheets.reduce((s, sh) => sh.included ? s + sh.policies.size : s, 0);
+    const rowsHtml = f.sheets.map((sh, si) => {
+      let flag = '';
+      if (/summary/i.test(sh.name)) flag = '<span class="flag summary">SUMMARY</span>';
+      else if (sh.policies.size === 0) flag = '<span class="flag empty">EMPTY</span>';
+      else flag = '<span class="flag ok">' + sh.policies.size.toLocaleString() + ' policies</span>';
+      const headerDesc = sh.headerRowIdx >= 0
+        ? `header row ${sh.headerRowIdx + 1}, col ${sh.colLetter}`
+        : `no header found — defaulted to col ${sh.colLetter}`;
+      return `
+        <tr>
+          <td><label class="chk"><input type="checkbox" ${sh.included ? 'checked' : ''} onchange="toggleSheet(${fi},${si},this.checked)"></label></td>
+          <td class="sn">${sh.name}</td>
+          <td class="muted">${headerDesc}</td>
+          <td>${flag}</td>
+          <td class="muted">${sh.note || ''}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="filecard" style="align-items:flex-start; flex-direction:column; gap:8px;">
+        <div style="display:flex; align-items:center; width:100%; gap:10px;">
+          <span class="badge">${f.sheets.length} sheets</span>
+          <span class="name">${f.fileName}</span>
+          <span class="meta">${totalPolicies.toLocaleString()} policies (included sheets)</span>
+          <button class="rm" onclick="removeReturnsFile(${fi})">Remove</button>
+        </div>
+        <table class="sheet-table">
+          <thead><tr><th></th><th>Sheet</th><th>Detection</th><th>Policies</th><th>Note</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+}
+
+function toggleSheet(fileIdx, sheetIdx, checked){
+  returnsFiles[fileIdx].sheets[sheetIdx].included = checked;
+  renderReturnsFiles();
+  updateRunState();
+}
+function removeReturnsFile(idx){
+  returnsFiles.splice(idx, 1);
+  renderReturnsFiles();
+  updateRunState();
+}
+
+function updateRunState(){
+  const btn = document.getElementById('run-btn');
+  const note = document.getElementById('run-note');
+  const ready = premiumStatus && returnsFiles.length > 0;
+  btn.disabled = !ready;
+  if (!premiumStatus) note.textContent = 'Upload a Premium Status file to continue.';
+  else if (returnsFiles.length === 0) note.textContent = 'Upload at least one returns workbook to continue.';
+  else note.textContent = `Ready — ${premiumStatus.currency} Premium Status against ${returnsFiles.length} returns file(s).`;
+}
+
+/* ---------------------------------------------------------------------
+   Upload wiring
+--------------------------------------------------------------------- */
+function wireDrop(dropEl, inputEl, onFiles){
+  dropEl.addEventListener('click', () => inputEl.click());
+  inputEl.addEventListener('change', () => { onFiles(Array.from(inputEl.files)); inputEl.value = ''; });
+  ['dragover','dragenter'].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.remove('drag'); }));
+  dropEl.addEventListener('drop', e => { const files = Array.from(e.dataTransfer.files); onFiles(files); });
+}
+
+wireDrop(document.getElementById('ps-drop'), document.getElementById('ps-input'), async (files) => {
+  if (!files.length) return;
+  try{
+    premiumStatus = await loadPremiumStatus(files[0]);
+    renderPremiumStatusCard();
+  }catch(err){
+    alert('Premium Status file: ' + err.message);
+  }
+  updateRunState();
+});
+
+wireDrop(document.getElementById('ret-drop'), document.getElementById('ret-input'), async (files) => {
+  for (const file of files){
+    try{
+      const parsed = await loadReturnsFile(file);
+      returnsFiles.push(parsed);
+    }catch(err){
+      alert(`Returns file "${file.name}": ${err.message}`);
+    }
+  }
+  renderReturnsFiles();
+  updateRunState();
+});
+
+/* ---------------------------------------------------------------------
+   Run validation
+--------------------------------------------------------------------- */
+document.getElementById('run-btn').addEventListener('click', runValidation);
+
+function runValidation(){
+  // 1. Union of unique policy numbers across all included sheets
+  const uniquePolicies = new Set();
+  returnsFiles.forEach(f => f.sheets.forEach(sh => {
+    if (sh.included) sh.policies.forEach(p => uniquePolicies.add(p));
+  }));
+  const policyList = Array.from(uniquePolicies).sort();
+
+  // 2. Index Premium Status rows by insurance_ref for fast lookup
+  const ci = premiumStatus.colIdx;
+  const byPolicy = new Map();
+  premiumStatus.dataRows.forEach(row => {
+    const key = normPolicy(row[ci['insurance_ref']]);
+    if (!byPolicy.has(key)) byPolicy.set(key, []);
+    byPolicy.get(key).push(row);
+  });
+
+  // 3. Aggregate per unique policy
+  const results = policyList.map(policy => {
+    const matches = byPolicy.get(policy) || [];
+    let tx = 0, out = 0, alloc = 0;
+    matches.forEach(row => {
+      tx += Number(row[ci['transction_amount']]) || 0;
+      out += Number(row[ci['outstanding_amount']]) || 0;
+      alloc += Number(row[ci['allocated_amount']]) || 0;
+    });
+    let status;
+    if (matches.length === 0) status = 'NOTFOUND';
+    else if (Math.round(out * 100) / 100 !== 0) status = 'OUTSTANDING';
+    else status = 'OK';
+    return { policy, matchCount: matches.length, tx, out, alloc, status };
+  });
+
+  lastResults = results;
+  renderResults(results);
+  document.getElementById('results-wrap').style.display = 'block';
+  document.getElementById('results-wrap').scrollIntoView({behavior:'smooth', block:'start'});
+
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('dl-fname').textContent = `Treaty_Validation_${premiumStatus.currency}_${today}.xlsx`;
+}
+
+/* ---------------------------------------------------------------------
+   Results rendering
+--------------------------------------------------------------------- */
+function renderResults(results){
+  const okCount = results.filter(r => r.status === 'OK').length;
+  const outCount = results.filter(r => r.status === 'OUTSTANDING').length;
+  const nfCount = results.filter(r => r.status === 'NOTFOUND').length;
+
+  document.getElementById('results-sub').textContent =
+    `${results.length.toLocaleString()} unique polic${results.length === 1 ? 'y' : 'ies'} · ${premiumStatus.currency}`;
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat"><div class="n">${results.length.toLocaleString()}</div><div class="l">Unique Policies</div></div>
+    <div class="stat ok"><div class="n">${okCount.toLocaleString()}</div><div class="l">No Outstanding</div></div>
+    <div class="stat warn"><div class="n">${outCount.toLocaleString()}</div><div class="l">Outstanding Balance</div></div>
+    <div class="stat bad"><div class="n">${nfCount.toLocaleString()}</div><div class="l">Not in Premium Status</div></div>
+  `;
+
+  applyFilters();
+}
+
+function applyFilters(){
+  if (!lastResults) return;
+  const statusFilter = document.getElementById('filter-status').value;
+  const search = document.getElementById('filter-search').value.trim().toUpperCase();
+
+  const rows = lastResults.filter(r => {
+    if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
+    if (search && !r.policy.includes(search)) return false;
+    return true;
+  });
+
+  document.getElementById('results-body').innerHTML = rows.map(r => `
+    <tr>
+      <td class="policy">${r.policy}</td>
+      <td>${r.matchCount}</td>
+      <td>${fmtNum(r.tx)}</td>
+      <td>${fmtNum(r.out)}</td>
+      <td>${fmtNum(r.alloc)}</td>
+      <td><span class="status-pill ${r.status}">${r.status === 'NOTFOUND' ? 'NOT FOUND' : r.status}</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="empty-state">No rows match the current filter.</td></tr>';
+}
+
+document.getElementById('filter-status').addEventListener('change', applyFilters);
+document.getElementById('filter-search').addEventListener('input', applyFilters);
+
+/* ---------------------------------------------------------------------
+   Download workbook (ExcelJS, live formulas)
+--------------------------------------------------------------------- */
+document.getElementById('download-btn').addEventListener('click', generateWorkbook);
+
+async function generateWorkbook(){
+  if (!lastResults || !premiumStatus) return;
+  const btn = document.getElementById('download-btn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Building workbook…';
+  btn.disabled = true;
+
+  try{
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Treaty Validation Tool';
+    wb.created = new Date();
+
+    const FONT = { name: 'Arial', size: 10 };
+    const HEADER_FILL = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1F3B57'} };
+    const HEADER_FONT = { name:'Arial', size:10, bold:true, color:{argb:'FFFFFFFF'} };
+
+    /* ---- PremiumStatus_Data sheet ---- */
+    const psSheet = wb.addWorksheet('PremiumStatus_Data');
+    psSheet.addRow(premiumStatus.headers.map(h => h == null ? '' : h));
+    premiumStatus.dataRows.forEach(row => psSheet.addRow(row));
+    psSheet.getRow(1).eachCell(c => { c.font = HEADER_FONT; c.fill = HEADER_FILL; });
+    psSheet.views = [{ state:'frozen', ySplit:1 }];
+    psSheet.autoFilter = { from:{row:1,column:1}, to:{row:1,column:premiumStatus.headers.length} };
+    psSheet.columns.forEach(col => { col.width = 16; col.font = FONT; });
+
+    const ci = premiumStatus.colIdx;
+    const refCol = colLetter(ci['insurance_ref']);
+    const txCol = colLetter(ci['transction_amount']);
+    const outCol = colLetter(ci['outstanding_amount']);
+    const allocCol = colLetter(ci['allocated_amount']);
+    const lastDataRow = premiumStatus.dataRows.length + 1;
+
+    /* ---- Validation sheet ---- */
+    const vSheet = wb.addWorksheet('Validation');
+    const vHeaders = ['Policy Number','Match Count','Transaction Amount','Outstanding Amount','Allocated Amount','Status'];
+    vSheet.addRow(vHeaders);
+    vSheet.getRow(1).eachCell(c => { c.font = HEADER_FONT; c.fill = HEADER_FILL; });
+
+    lastResults.forEach((r, i) => {
+      const row = i + 2;
+      vSheet.addRow([
+        r.policy,
+        { formula: `COUNTIFS(PremiumStatus_Data!$${refCol}$2:$${refCol}$${lastDataRow},A${row})` },
+        { formula: `SUMIFS(PremiumStatus_Data!$${txCol}$2:$${txCol}$${lastDataRow},PremiumStatus_Data!$${refCol}$2:$${refCol}$${lastDataRow},A${row})` },
+        { formula: `SUMIFS(PremiumStatus_Data!$${outCol}$2:$${outCol}$${lastDataRow},PremiumStatus_Data!$${refCol}$2:$${refCol}$${lastDataRow},A${row})` },
+        { formula: `SUMIFS(PremiumStatus_Data!$${allocCol}$2:$${allocCol}$${lastDataRow},PremiumStatus_Data!$${refCol}$2:$${refCol}$${lastDataRow},A${row})` },
+        { formula: `IF(B${row}=0,"NOT FOUND",IF(ROUND(D${row},2)<>0,"OUTSTANDING","OK"))` }
+      ]);
+    });
+
+    const lastVRow = lastResults.length + 1;
+    vSheet.getColumn(1).width = 22;
+    vSheet.getColumn(2).width = 13;
+    [3,4,5].forEach(c => { vSheet.getColumn(c).width = 18; vSheet.getColumn(c).numFmt = '#,##0.00;(#,##0.00)'; });
+    vSheet.getColumn(6).width = 15;
+    vSheet.eachRow(row => row.eachCell(c => { if (!c.font || !c.font.bold) c.font = FONT; }));
+    vSheet.views = [{ state:'frozen', ySplit:1 }];
+    vSheet.autoFilter = { from:'A1', to:`F${lastVRow}` };
+
+    vSheet.addConditionalFormatting({
+      ref: `F2:F${lastVRow}`,
+      rules: [
+        { type:'cellIs', operator:'equal', formulae:['"OK"'], priority:1,
+          style:{ fill:{type:'pattern',pattern:'solid',fgColor:{argb:'FFE7F2EC'}}, font:{color:{argb:'FF1E6B45'},bold:true} } },
+        { type:'cellIs', operator:'equal', formulae:['"OUTSTANDING"'], priority:2,
+          style:{ fill:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFBF1DE'}}, font:{color:{argb:'FF8A5A12'},bold:true} } },
+        { type:'cellIs', operator:'equal', formulae:['"NOT FOUND"'], priority:3,
+          style:{ fill:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF9E9E8'}}, font:{color:{argb:'FF9C2F2F'},bold:true} } }
+      ]
+    });
+
+    /* ---- Summary sheet ---- */
+    const sSheet = wb.addWorksheet('Summary');
+    sSheet.getColumn(1).width = 34;
+    sSheet.getColumn(2).width = 46;
+    sSheet.addRow(['Treaty Validation Summary']).font = { name:'Arial', size:13, bold:true, color:{argb:'FF142838'} };
+    sSheet.addRow([`Currency: ${premiumStatus.currency}`]);
+    sSheet.addRow([`Premium Status file: ${premiumStatus.fileName}`]);
+    sSheet.addRow([`Returns files: ${returnsFiles.map(f => f.fileName).join(', ')}`]);
+    sSheet.addRow([`Generated: ${new Date().toLocaleString()}`]);
+    sSheet.addRow([]);
+    const labelRow = sSheet.addRow(['Metric','Value']);
+    labelRow.eachCell(c => { c.font = HEADER_FONT; c.fill = HEADER_FILL; });
+    sSheet.addRow(['Total unique policies in returns', { formula:`COUNTA(Validation!A2:A${lastVRow})` }]);
+    sSheet.addRow(['Policies with no outstanding balance', { formula:`COUNTIF(Validation!F2:F${lastVRow},"OK")` }]);
+    sSheet.addRow(['Policies with an outstanding balance', { formula:`COUNTIF(Validation!F2:F${lastVRow},"OUTSTANDING")` }]);
+    sSheet.addRow(['Policies not found in Premium Status', { formula:`COUNTIF(Validation!F2:F${lastVRow},"NOT FOUND")` }]);
+    sSheet.addRow([]);
+    sSheet.addRow(['Result', { formula:`IF(COUNTIF(Validation!F2:F${lastVRow},"OUTSTANDING")+COUNTIF(Validation!F2:F${lastVRow},"NOT FOUND")=0,"ALL CLEAR — no outstanding balances or unmatched policies","REVIEW REQUIRED — see Validation sheet")` }])
+      .font = { name:'Arial', size:10.5, bold:true };
+    sSheet.eachRow(row => row.eachCell(c => { if (!c.font) c.font = FONT; }));
+
+    /* ---- Source_Sheets audit sheet ---- */
+    const aSheet = wb.addWorksheet('Source_Sheets');
+    aSheet.addRow(['Source File','Sheet Name','Included','Policy Column','Header Row','Policies Found','Note']);
+    aSheet.getRow(1).eachCell(c => { c.font = HEADER_FONT; c.fill = HEADER_FILL; });
+    returnsFiles.forEach(f => f.sheets.forEach(sh => {
+      aSheet.addRow([
+        f.fileName, sh.name, sh.included ? 'Yes' : 'No', sh.colLetter,
+        sh.headerRowIdx >= 0 ? sh.headerRowIdx + 1 : '(none detected)',
+        sh.policies.size, sh.note || ''
+      ]);
+    }));
+    aSheet.columns.forEach(col => { col.width = 22; col.font = FONT; });
+    aSheet.getColumn(1).width = 34;
+    aSheet.autoFilter = { from:'A1', to:`G${aSheet.rowCount}` };
+
+    wb.views = [{ activeTab: 1 }]; // open on Validation sheet
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `Treaty_Validation_${premiumStatus.currency}_${today}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(err){
+    alert('Failed to build workbook: ' + err.message);
+    console.error(err);
+  }finally{
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+updateRunState();
+</script>
+</body>
+</html>

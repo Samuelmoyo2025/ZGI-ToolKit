@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treaty Returns — ZimnatGeneral Insurance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+:root{
+  --bg:#F5F6F8;--surface:#FFFFFF;--surface2:#F0F2F5;--border:#E4E7EC;
+  --accent:#00A651;--accent2:#1A6FC4;--green:#12B76A;--red:#F04438;--amber:#DC6803;
+  --text:#101828;--muted:#667085;
+  --mono:'Inter',sans-serif;--sans:'Inter',sans-serif;--display:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:32px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.brand{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+h1{font-family:var(--display);font-size:clamp(20px,3.5vw,34px);font-weight:700;line-height:1.15;letter-spacing:-.3px}
+h1 span{color:var(--accent)}
+.header-meta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.8}
+.steps{display:flex;align-items:center;margin-bottom:28px}
+.step{display:flex;align-items:center;gap:9px}
+.step-num{width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;transition:all .2s}
+.step.active .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
+.step.done .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
+.step-label{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--muted);transition:color .2s;white-space:nowrap}
+.step.active .step-label{color:var(--accent);font-weight:600}
+.step.done .step-label{color:var(--accent)}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 12px;min-width:14px}
+.panel{display:none}.panel.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.upload-card{background:var(--surface);border:1.5px dashed var(--border);border-radius:11px;padding:22px 20px;transition:all .2s;position:relative;overflow:hidden}
+.upload-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .2s}
+.upload-card:hover,.upload-card.dragover{border-color:var(--accent);background:#F0FAF5}
+.upload-card:hover::before,.upload-card.dragover::before{opacity:1}
+.upload-card.loaded{border-color:var(--accent2);border-style:solid;background:#EAF7EF}
+.upload-card.loaded::before{background:linear-gradient(90deg,var(--accent2),transparent);opacity:1}
+.card-tag{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.card-title{font-family:var(--display);font-size:14px;font-weight:700;margin-bottom:5px}
+.card-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.upload-btn{display:inline-flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 13px;border-radius:6px;cursor:pointer;transition:all .15s}
+.upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.file-status{margin-top:11px;font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.file-status.ok{color:var(--accent2)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+input[type=file]{display:none}
+.config-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.cfg-grp{display:flex;flex-direction:column;gap:5px}
+.cfg-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cfg-select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:6px 11px;outline:none;transition:border-color .15s;cursor:pointer;min-width:130px}
+.cfg-select:focus{border-color:var(--accent)}
+.cfg-select.narrow{min-width:80px}
+.cur-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.cur-opt{font-family:var(--mono);font-size:11px;padding:6px 14px;cursor:pointer;transition:all .15s;color:var(--muted);user-select:none}
+.cur-opt.active{background:rgba(0,166,81,.2);color:var(--accent)}
+.btn-primary{background:var(--accent);color:#fff;border:none;font-family:var(--display);font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:9px}
+.btn-primary:hover{background:#009147;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 18px;border-radius:7px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:7px}
+.btn-secondary:hover{border-color:var(--accent2);color:var(--accent2)}
+.btn-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--muted)}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:640px){.results-grid{grid-template-columns:1fr}}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:20px;position:relative;overflow:hidden}
+.result-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.result-card.marsh::after{background:var(--amber)}
+.result-card.minerva::after{background:var(--accent2)}
+.rc-tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.rc-tag.marsh{color:var(--amber)}
+.rc-tag.minerva{color:var(--accent2)}
+.rc-title{font-family:var(--display);font-size:17px;font-weight:700;margin-bottom:12px}
+.rc-stat{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(212,216,228,.6);font-size:12px}
+.rc-stat:last-child{border-bottom:none}
+.rc-stat-label{color:var(--muted);font-family:var(--mono);font-size:11px}
+.rc-stat-val{font-family:var(--mono);font-size:12px;color:var(--text)}
+.rc-stat-val.pos{color:var(--green)}
+.rc-stat-val.neg{color:var(--red)}
+.dl-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.dl-btn{flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 12px;border-radius:7px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;justify-content:center}
+.dl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.preview-section{background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:16px}
+.preview-header{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.preview-title{font-family:var(--display);font-size:13px;font-weight:700}
+.preview-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;max-height:340px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{position:sticky;top:0;z-index:2}
+th{background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:9px 11px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
+td{padding:8px 11px;border-bottom:1px solid rgba(212,216,228,.4);white-space:nowrap;font-family:var(--mono);font-size:11px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,166,81,.04)}
+.num{text-align:right}
+.badge{border-radius:4px;padding:2px 7px;font-size:10px;border:1px solid}
+.badge-motor{background:rgba(243,156,18,.1);color:var(--amber);border-color:rgba(243,156,18,.3)}
+.badge-runoff{background:rgba(231,76,60,.08);color:var(--red);border-color:rgba(231,76,60,.2)}
+/* Tab styles */
+.tab-bar{display:flex;border-bottom:2px solid var(--border);margin-bottom:0;background:var(--surface);border-radius:11px 11px 0 0;overflow:hidden}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 20px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:9px;margin-left:5px;color:var(--muted)}
+.tab-pane{display:none;padding:16px}
+.tab-pane.active{display:block}
+.tab-wrap{background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:20px}
+/* Cash calls */
+.cc-cb{width:14px;height:14px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+.cc-actions{display:flex;gap:8px}
+.cc-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:5px;cursor:pointer;transition:all .15s}
+.cc-btn:hover{border-color:var(--accent);color:var(--accent)}
+.cc-selected{background:rgba(231,76,60,.06)!important}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);color:var(--text);font-family:var(--mono);font-size:12px;padding:13px 18px;border-radius:8px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:100;max-width:340px}
+.toast.show{transform:none;opacity:1}
+.toast.error{border-left-color:var(--red)}
+/* Settings panel */
+.settings-btn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:18px;cursor:pointer;transition:all .15s;line-height:1;color:var(--muted);flex-shrink:0}
+.settings-btn:hover{border-color:var(--accent);color:var(--accent)}
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+.settings-modal{background:var(--surface);border-radius:12px;width:min(860px,96vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.settings-modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);font-family:var(--display);font-size:16px;font-weight:700;flex-shrink:0}
+.settings-modal-body{flex:1;overflow-y:auto;padding:20px 24px}
+.settings-footer{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-top:1px solid var(--border);flex-shrink:0;gap:8px;flex-wrap:wrap}
+.cfg-section{font-family:var(--display);font-size:13px;font-weight:700;color:var(--text);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.cfg-section:first-child{margin-top:0}
+.map-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px}
+.map-table th{background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.map-table td{padding:4px 6px;border-bottom:1px solid rgba(212,216,228,.4);vertical-align:middle}
+.map-table input,.map-table select{background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;width:100%;outline:none;box-sizing:border-box}
+.map-table input:focus,.map-table select:focus{border-color:var(--accent)}
+.btn-danger{background:var(--surface2);border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:11px;padding:8px 14px;border-radius:7px;cursor:pointer;transition:all .15s}
+.btn-danger:hover{background:rgba(240,68,56,.08)}
+.btn-icon{background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px;padding:2px 6px;color:var(--muted);transition:all .1s;line-height:1.4;white-space:nowrap}
+.btn-icon:hover:not(:disabled){border-color:var(--accent2);color:var(--accent2)}
+.btn-icon:disabled{opacity:.3;cursor:not-allowed}
+/* Resolution panel */
+#panel-res{display:none}
+#panel-res.res-active{display:block}
+.res-warn-box{background:#fffbeb;border:1px solid #f59e0b;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 18px;margin-bottom:24px;font-size:13px;line-height:1.6;color:var(--text)}
+.res-warn-box strong{font-family:var(--display);font-size:14px;display:block;margin-bottom:4px}
+.res-guessed td{background:#fffbe6}
+.res-badge{font-size:10px;background:#f59e0b;color:#fff;padding:2px 6px;border-radius:3px;font-family:var(--mono);margin-left:8px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div>
+    <div class="brand"><a href="index.html" style="color:var(--muted);text-decoration:none">&larr; Main Menu</a> &nbsp;/&nbsp; Zimnat General Insurance &nbsp;/&nbsp; Reinsurance Operations</div>
+    <h1>Treaty <span>Returns</span></h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="header-meta">PURE Extract → MARSH Motor<br>+ MINERVA Non-Motor<br>Monthly Processing</div>
+    <button class="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
+  </div>
+</header>
+
+<div class="steps">
+  <div class="step active" id="step1"><div class="step-num">1</div><div class="step-label">Upload</div></div>
+  <div class="step-line"></div>
+  <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Validate</div></div>
+  <div class="step-line"></div>
+  <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">Download</div></div>
+</div>
+
+<!-- PANEL 1: Upload & Configure -->
+<div class="panel active" id="panel1">
+  <div class="config-bar">
+    <div class="cfg-grp">
+      <div class="cfg-label">Currency</div>
+      <div class="cur-toggle">
+        <div class="cur-opt active" id="cur-usd" onclick="setCur('USD')">USD</div>
+        <div class="cur-opt" id="cur-zwg" onclick="setCur('ZWG')">ZWG</div>
+      </div>
+    </div>
+    <div class="cfg-grp">
+      <div class="cfg-label">Month</div>
+      <select class="cfg-select" id="cfg-month"></select>
+    </div>
+    <div class="cfg-grp">
+      <div class="cfg-label">Report Year</div>
+      <select class="cfg-select narrow" id="cfg-year"></select>
+    </div>
+    <div class="cfg-grp">
+      <div class="cfg-label">VAT on Commission</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input type="number" class="cfg-select narrow" id="cfg-vat" min="0" max="100" step="0.1" style="width:70px" oninput="onVatChange(this.value)">
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">%</span>
+      </div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="upload-card" id="card-treaty" ondragover="dov(event,'card-treaty')" ondragleave="dlv('card-treaty')" ondrop="ddrop(event,'treaty')">
+      <div class="card-tag">Source 01</div>
+      <div class="card-title">Treaty Premium Bordereau</div>
+      <div class="card-desc">PURE export — Premium Bordereau By Class Of Business (.xlsx)</div>
+      <label class="upload-btn" onclick="document.getElementById('ft').click()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Choose .xlsx file
+      </label>
+      <input type="file" id="ft" accept=".xlsx,.xls" onchange="loadFile(event,'treaty')">
+      <div class="file-status" id="st"><span class="status-dot"></span><span>No file loaded</span></div>
+    </div>
+    <div class="upload-card" id="card-claims" ondragover="dov(event,'card-claims')" ondragleave="dlv('card-claims')" ondrop="ddrop(event,'claims')">
+      <div class="card-tag">Source 02</div>
+      <div class="card-title">Claims Bordereau</div>
+      <div class="card-desc">PURE export — Claims Bordereau (.xlsx)</div>
+      <label class="upload-btn" onclick="document.getElementById('fc').click()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Choose .xlsx file
+      </label>
+      <input type="file" id="fc" accept=".xlsx,.xls" onchange="loadFile(event,'claims')">
+      <div class="file-status" id="sc"><span class="status-dot"></span><span>No file loaded</span></div>
+      <label style="display:flex;align-items:center;gap:7px;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;user-select:none">
+        <input type="checkbox" id="chk-no-claims" onchange="toggleNoClaims(this.checked)" style="accent-color:var(--accent);width:13px;height:13px">
+        No claims for this period
+      </label>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-next1" onclick="parseAndPreview()" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Next: Validate
+    </button>
+    <span class="hint" id="hint1">Load both files to continue</span>
+  </div>
+</div>
+
+<!-- PANEL RES: Resolve new entries -->
+<div id="panel-res">
+  <div class="res-warn-box">
+    <strong>⚠ New entries found in this bordereau</strong>
+    Map the items below so they route correctly. Your selections are saved for future uploads — next time this file type is processed, this panel won't appear.
+  </div>
+  <div id="res-body"></div>
+  <div class="btn-row" style="margin-top:8px">
+    <button class="btn-secondary" onclick="skipResolutions()">Skip — keep as 'Others'</button>
+    <button class="btn-primary" onclick="saveResolutions()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save &amp; Continue
+    </button>
+  </div>
+</div>
+
+<!-- PANEL 2: Validate -->
+<div class="panel" id="panel2">
+  <div class="tab-wrap">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="tab-prem" onclick="switchTab('tab-prem')">
+        Premiums <span class="tab-badge" id="badge-prem"></span>
+      </button>
+      <button class="tab-btn" data-tab="tab-claims" onclick="switchTab('tab-claims')">
+        Claims <span class="tab-badge" id="badge-claims"></span>
+      </button>
+      <button class="tab-btn" data-tab="tab-cc" onclick="switchTab('tab-cc')">
+        Cash Calls <span class="tab-badge" id="badge-cc" style="background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.3);color:var(--red)"></span>
+      </button>
+    </div>
+
+    <!-- Premiums tab -->
+    <div class="tab-pane active" id="tab-prem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span class="preview-title">Premium Data</span>
+        <span class="preview-count" id="cnt-prem"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Re Group</th><th>Treaty</th><th>Motor?</th><th>Runoff?</th>
+            <th>Policy Holder</th><th>Class</th><th>From</th>
+            <th class="num">Treaty Prem</th><th class="num">Commission</th><th class="num">Net</th>
+          </tr></thead>
+          <tbody id="prem-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Claims tab -->
+    <div class="tab-pane" id="tab-claims">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span class="preview-title">Claims Data <span style="font-weight:400;color:var(--muted)">(tobacco excluded)</span></span>
+        <span class="preview-count" id="cnt-claims"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Claim Ref</th><th>Policy Holder</th><th>Class of Business</th>
+            <th>Standard Class</th><th>Category</th><th>Parent Reinsurer</th>
+            <th>Trans Date</th><th class="num">Claims Paid</th>
+          </tr></thead>
+          <tbody id="claims-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cash Calls tab -->
+    <div class="tab-pane" id="tab-cc">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <span class="preview-title">Cash Calls</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:10px">Select claims already collected outside the system to exclude from report</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="preview-count" id="cnt-cc"></span>
+          <button class="cc-btn" onclick="selectAllCC(true)">Select All</button>
+          <button class="cc-btn" onclick="selectAllCC(false)">Deselect All</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:30px">☐</th>
+            <th>Claim Ref</th><th>Standard Class</th><th>Policy Holder</th>
+            <th>Policy Number</th><th>Class of Business</th><th>Trans Date</th>
+            <th class="num">Total Claims Pd</th><th class="num"># Re</th>
+          </tr></thead>
+          <tbody id="cc-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-secondary" onclick="goTo(1)">← Back</button>
+    <button class="btn-primary" onclick="generate()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Generate Returns
+    </button>
+  </div>
+</div>
+
+<!-- PANEL 3: Download -->
+<div class="panel" id="panel3">
+  <div id="results-content">
+    <div class="results-grid">
+      <!-- MARSH card -->
+      <div class="result-card marsh">
+        <div class="rc-tag marsh">Output 01 — MARSH / BRIGHT</div>
+        <div class="rc-title">Motor Treaty Return</div>
+        <div class="rc-stat"><span class="rc-stat-label">Policy rows</span><span class="rc-stat-val" id="marsh-rows">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Reinsurers</span><span class="rc-stat-val">8</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Net Treaty Premium</span><span class="rc-stat-val pos" id="marsh-prem">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Motor Claims</span><span class="rc-stat-val neg" id="marsh-claims">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Net Due</span><span class="rc-stat-val pos" id="marsh-net">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Current rows</span><span class="rc-stat-val" id="marsh-current">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Runoff rows</span><span class="rc-stat-val" id="marsh-runoff">—</span></div>
+        <div class="dl-btns">
+          <button class="dl-btn" onclick="exportMarsh(false)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download Current MARSH
+          </button>
+          <button class="dl-btn" onclick="exportMarsh(true)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download Runoff MARSH
+          </button>
+        </div>
+      </div>
+      <!-- MINERVA card -->
+      <div class="result-card minerva">
+        <div class="rc-tag minerva">Output 02 — MINERVA</div>
+        <div class="rc-title">Non-Motor Treaty Return</div>
+        <div class="rc-stat"><span class="rc-stat-label">Policy rows</span><span class="rc-stat-val" id="min-rows">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Classes</span><span class="rc-stat-val" id="min-classes">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Treaty Premium</span><span class="rc-stat-val pos" id="min-prem">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Claims</span><span class="rc-stat-val neg" id="min-claims">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Net Payable</span><span class="rc-stat-val pos" id="min-net">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Current rows</span><span class="rc-stat-val" id="min-current">—</span></div>
+        <div class="rc-stat"><span class="rc-stat-label">Runoff rows</span><span class="rc-stat-val" id="min-runoff">—</span></div>
+        <div class="dl-btns">
+          <button class="dl-btn" onclick="exportMinerva(false)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download Current MINERVA
+          </button>
+          <button class="dl-btn" onclick="exportMinerva(true)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download Runoff MINERVA
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goTo(2)">← Back to Validate</button>
+    </div>
+  </div>
+</div>
+</div>
+<div id="settings-overlay" class="settings-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal">
+    <div class="settings-modal-hdr">
+      <span>⚙ Settings</span>
+      <button class="btn-icon" onclick="closeSettings()" style="font-size:14px;padding:4px 10px">✕</button>
+    </div>
+    <div class="tab-bar" style="border-radius:0;flex-shrink:0;overflow:visible">
+      <button class="tab-btn active" data-stab="stab-general" onclick="switchStab('stab-general')">General</button>
+      <button class="tab-btn" data-stab="stab-routing" onclick="switchStab('stab-routing')">Treaty Routing</button>
+      <button class="tab-btn" data-stab="stab-mapping" onclick="switchStab('stab-mapping')">Class Mapping</button>
+      <button class="tab-btn" data-stab="stab-reins" onclick="switchStab('stab-reins')">Reinsurers</button>
+    </div>
+    <div class="settings-modal-body">
+      <div class="tab-pane active" id="stab-general"></div>
+      <div class="tab-pane" id="stab-routing"></div>
+      <div class="tab-pane" id="stab-mapping"></div>
+      <div class="tab-pane" id="stab-reins"></div>
+    </div>
+    <div class="settings-footer">
+      <button class="btn-danger" onclick="resetAndRender()">Reset to Defaults</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// Premium XLSX reinsurer group headers → {parent, cat}
+const PREM_RE_GROUPS_DEFAULTS = {
+  'Emeritus_Auto':{parent:'EMERITUS RE',cat:'AUTO'},
+  'EMERITUS_QS':{parent:'EMERITUS RE',cat:'QS'},
+  'EMERITUSSURP':{parent:'EMERITUS RE',cat:'SURPLUS'},
+  'EMERITUS RE':{parent:'EMERITUS RE',cat:'OTHER'},
+  'FBC Re Auto':{parent:'FBC RE',cat:'AUTO'},
+  'FBC_QS':{parent:'FBC RE',cat:'QS'},
+  'FBCSURP':{parent:'FBC RE',cat:'SURPLUS'},
+  'FBC_AUTO':{parent:'FBC RE',cat:'AUTO'},
+  'FBC RE':{parent:'FBC RE',cat:'OTHER'},
+  'FIRST_AUTO':{parent:'FIRST MUTUAL RE',cat:'AUTO'},
+  'FIRST_QS':{parent:'FIRST MUTUAL RE',cat:'QS'},
+  'FIRST MUTUAL RE':{parent:'FIRST MUTUAL RE',cat:'OTHER'},
+  'GRANDRE_AUTO':{parent:'GRAND RE',cat:'AUTO'},
+  'GRAND_QS':{parent:'GRAND RE',cat:'QS'},
+  'GRAND RE':{parent:'GRAND RE',cat:'OTHER'},
+  'TROPICALRE_AUTO':{parent:'TROPICAL RE',cat:'AUTO'},
+  'TROPICALQS':{parent:'TROPICAL RE',cat:'QS'},
+  'TROPICAL RE':{parent:'TROPICAL RE',cat:'OTHER'},
+  'WAICA AUTOFAC':{parent:'WAICA RE',cat:'AUTO'},
+  'WAICA REINSURANCE AUTOFAC':{parent:'WAICA RE',cat:'AUTO'},
+  'WAICAQS':{parent:'WAICA RE',cat:'QS'},
+  'WAICA RE':{parent:'WAICA RE',cat:'OTHER'},
+  'ZB_AUTO':{parent:'ZB RE',cat:'AUTO'},
+  'ZB_QS':{parent:'ZB RE',cat:'QS'},
+  'ZB RE':{parent:'ZB RE',cat:'OTHER'},
+  'ZEPRE_AUTO':{parent:'ZEP RE',cat:'AUTO'},
+  'ZEPREAUTO':{parent:'ZEP RE',cat:'AUTO'},
+  'ZEPRE_QS':{parent:'ZEP RE',cat:'QS'},
+  'ZEPREQS':{parent:'ZEP RE',cat:'QS'},
+  'ZEPRESURP':{parent:'ZEP RE',cat:'SURPLUS'},
+  'ZEP RE':{parent:'ZEP RE',cat:'OTHER'},
+};
+
+const CLAIMS_ROUTING_DEFAULTS = {
+  'EMERITUS RE QUOTA SHARE':{parent:'EMERITUS RE',cat:'QS'},
+  'EMERITUS REINSURANCE COMPANY (AUTO)':{parent:'EMERITUS RE',cat:'AUTO'},
+  'EMERITUS SURPLUS':{parent:'EMERITUS RE',cat:'SURPLUS'},
+  'FBC Re Auto':{parent:'FBC RE',cat:'AUTO'},
+  'FBC RE QUOTA SHARE':{parent:'FBC RE',cat:'QS'},
+  'FBC RE SURPLUS':{parent:'FBC RE',cat:'SURPLUS'},
+  'FIRST MUTUAL RE QUOTA SHARE':{parent:'FIRST MUTUAL RE',cat:'QS'},
+  'FIRST MUTUAL REINSURANCE COMPANY':{parent:'FIRST MUTUAL RE',cat:'AUTO'},
+  'FIRST MUTUAL REINSURANCE SURPLUS':{parent:'FIRST MUTUAL RE',cat:'SURPLUS'},
+  'FIRST MUTUAL SURPLUS':{parent:'FIRST MUTUAL RE',cat:'SURPLUS'},
+  'GRAND RE':{parent:'GRAND RE',cat:'AUTO'},
+  'GRAND RE QUOTA SHARE':{parent:'GRAND RE',cat:'QS'},
+  'GRAND RE QOUTA SHARE':{parent:'GRAND RE',cat:'QS'},
+  'GRAND RE SURPLUS':{parent:'GRAND RE',cat:'SURPLUS'},
+  'TROPICAL RE':{parent:'TROPICAL RE',cat:'AUTO'},
+  'TROPICAL RE QUOTA SHARE':{parent:'TROPICAL RE',cat:'QS'},
+  'TROPICAL RE SURPLUS':{parent:'TROPICAL RE',cat:'SURPLUS'},
+  'TRANSAXIS RE':{parent:'TRANSAXIS RE',cat:'SURPLUS'},
+  'WAICA RE AUTOFAC':{parent:'WAICA RE',cat:'AUTO'},
+  'WAICA RE QUOTA SHARE':{parent:'WAICA RE',cat:'QS'},
+  'WAICA RE SURPLUS':{parent:'WAICA RE',cat:'SURPLUS'},
+  'WAICA REINSURANCE AUTOFAC':{parent:'WAICA RE',cat:'AUTO'},
+  'ZB RE SURPLUS':{parent:'ZB RE',cat:'SURPLUS'},
+  'ZB REINSURANCE COMPANY (AUTO)':{parent:'ZB RE',cat:'AUTO'},
+  'ZB REINSURANCE COMPANY AUTO)':{parent:'ZB RE',cat:'AUTO'},
+  'ZBRE QUOTA SHARE':{parent:'ZB RE',cat:'QS'},
+  'ZEP RE':{parent:'ZEP RE',cat:'AUTO'},
+  'ZEP RE SURPLUS':{parent:'ZEP RE',cat:'SURPLUS'},
+  'ZEPRE QUOTA SHARE':{parent:'ZEP RE',cat:'QS'},
+  'ZEPRE QOUTA SHARE':{parent:'ZEP RE',cat:'QS'},
+};
+
+const PREMIUM_ROUTING_DEFAULTS = [
+  {t:'2025 FIRE & ENG USD SURPLUS TREATY MINERVA RE',r:'Householders And Houseowners',cls:'Householders And Houseowners'},
+  {t:'2025 FIRE & ENG USD SURPLUS TREATY MINERVA RE',r:'Fire Combined',cls:'Fire'},
+  {t:'2025 FIRE & ENG USD SURPLUS TREATY MINERVA RE',r:'Assets All Risks - Fire',cls:'Fire'},
+  {t:'2025 FIRE & ENG USD SURPLUS TREATY MINERVA RE',r:'Machinery Breakdown',cls:'Engineering'},
+  {t:'2025 FIRE & ENG USD SURPLUS TREATY MINERVA RE',r:'Telatronic',cls:'Engineering'},
+  {t:'2025 FIRE & ENG USD SURPLUS TREATY MINERVA RE',r:'Contractors All Risk',cls:'Engineering'},
+  // Crop & Livestock fire sub-class — must be before the catch-all below
+  {t:'2024 CROP & LIVESTOCK MULTI PERIL QS TREATY MINERVA RE',r:'Farming Fire Classes',cls:'Fire'},
+  {t:'2025 CROP & LIVESTOCK MULTI PERIL QS TREATY MINERVA RE',r:'Farming Fire Classes',cls:'Fire'},
+  // Treaty-only rules (r='' matches any riskType)
+  {t:'2025 MINERVA RE AUTOFAC',r:'',cls:'Minerva Autofac'},
+  {t:'2024 MISC ACC SURPLUS TREATY MINERVA RE',r:'',cls:'Misc Acc Surplus treaty Minerva'},
+  {t:'2025 MISC ACC SURPLUS TREATY MINERVA RE',r:'',cls:'Misc Acc Surplus treaty Minerva'},
+  {t:'2024 CROP & LIVESTOCK MULTI PERIL QS TREATY MINERVA RE',r:'',cls:'Non Tobacco Treaty'},
+  {t:'2025 CROP & LIVESTOCK MULTI PERIL QS TREATY MINERVA RE',r:'',cls:'Non Tobacco Treaty'},
+  {t:'2024 MOTOR AUTOFAC TREATY BRIGHT RE',r:'',cls:'Motor'},
+  {t:'2025 MOTOR AUTOFAC TREATY BRIGHT RE',r:'',cls:'Motor'},
+  {t:'2025 MOTOR AUTOFAC EBB TREATY BRIGHT RE',r:'',cls:'Motor'},
+  {t:'2025 SPECIAL VEHICLES AUTO FAC TREATY BRIGHT RE',r:'',cls:'Motor'},
+  {t:'2024 MOTOR EBB USD QS BRIGHT RE',r:'',cls:'Motor'},
+  {t:'2025 MOTOR EBB USD QS BRIGHT RE',r:'',cls:'Motor'},
+];
+
+const MINERVA_CLASS_MAP_DEFAULTS = {
+  'Assets All Risks - Fire':'Fire',
+  'Fire Combined':'Fire',
+  'Farming Fire Classes':'Fire',
+  'Machinery Breakdown':'Engineering',
+  'Electronic Equipment':'Engineering',
+  'Telatronic':'Engineering',
+  'Goods In Transit Commercial':'Engineering',
+  'Marine Cargo':'Engineering',
+  'Marine Hull':'Engineering',
+  'Business All Risks':'Engineering',
+  'Bankers Blanket Bond':'Engineering',
+  'Fidelity Guarantee':'Engineering',
+  'Professional Indemnity':'Engineering',
+  'Personal Accident':'Personal Accident',
+  'Group Personal Accident':'Personal Accident',
+  'Householders And Houseowners':'Householders And Houseowners',
+  'Assets All Risks - Accidental Classes':'Misc Acc Surplus treaty Minerva',
+  'Directors And Officers Liability':'Misc Acc Surplus treaty Minerva',
+  'Employers Liability':'Misc Acc Surplus treaty Minerva',
+  'Goods In Transit':'Misc Acc Surplus treaty Minerva',
+  'MONEY':'Misc Acc Surplus treaty Minerva',
+  'Public Liability':'Misc Acc Surplus treaty Minerva',
+  'Umbrella Liability':'Misc Acc Surplus treaty Minerva',
+  'WAREHOUSEMAN LIABILITY':'Misc Acc Surplus treaty Minerva',
+  'Crops All Risks':'Non Tobacco Treaty',
+  'Livestock Stand Alone':'Non Tobacco Treaty',
+  'Non Tobacco Treaty':'Non Tobacco Treaty',
+};
+
+const MARSH_RE_DEFAULTS = [
+  {parent:'EMERITUS RE',    sheet:'emeritus',  label:'Emeritus Re'},
+  {parent:'FBC RE',         sheet:'fbc',       label:'Fbc Re'},
+  {parent:'FIRST MUTUAL RE',sheet:'fm re',     label:'First Mutual Re'},
+  {parent:'GRAND RE',       sheet:'grand',     label:'Grand Re'},
+  {parent:'TROPICAL RE',    sheet:'tropical',  label:'Tropical Re'},
+  {parent:'WAICA RE',       sheet:'waica',     label:'Waica Re'},
+  {parent:'ZB RE',          sheet:'zb',        label:'Zb Re'},
+  {parent:'ZEP RE',         sheet:'zep',       label:'Zep Re'},
+];
+
+const MIN_CLASSES_DEFAULTS = [
+  'Fire','Engineering','Personal Accident','Householders And Houseowners',
+  'Minerva Autofac','Grand autofac','Misc Acc Surplus treaty Minerva',
+  'Non Tobacco Treaty',
+];
+
+// ── Config (localStorage-backed, settable via ⚙ modal) ────────────────────────
+const VAT_RATE_DEFAULT=15.5;
+let cfg={};
+function loadConfig(){
+  try{const s=localStorage.getItem('zimnat_treaty_config');if(s)cfg=JSON.parse(s);else resetConfig();}
+  catch{resetConfig();}
+}
+function saveConfig(){localStorage.setItem('zimnat_treaty_config',JSON.stringify(cfg));}
+function resetConfig(){
+  cfg={
+    vatRate:VAT_RATE_DEFAULT,
+    premiumRouting:JSON.parse(JSON.stringify(PREMIUM_ROUTING_DEFAULTS)),
+    minervaClassMap:JSON.parse(JSON.stringify(MINERVA_CLASS_MAP_DEFAULTS)),
+    premReGroups:JSON.parse(JSON.stringify(PREM_RE_GROUPS_DEFAULTS)),
+    claimsRouting:JSON.parse(JSON.stringify(CLAIMS_ROUTING_DEFAULTS)),
+    marshRe:JSON.parse(JSON.stringify(MARSH_RE_DEFAULTS)),
+    minClasses:[...MIN_CLASSES_DEFAULTS],
+  };
+}
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let premWB=null, claimWB=null, noClaims=false;
+let pRows=[], cRows=[];
+let marshData=null, minervaData=null;
+let cashCalledKeys=new Set();
+let cashCallData=[];
+let curCurrency='USD';
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const tn=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
+const f2=v=>+tn(v).toFixed(2);
+const f4=v=>+tn(v).toFixed(4);
+
+function excelToDate(s){
+  if(s==null)return null;
+  if(s instanceof Date)return isNaN(s.getTime())?null:s;   // SheetJS returned a Date object
+  if(typeof s==='number'&&s>0)return new Date(Date.UTC(1899,11,30)+s*86400000);
+  return null;
+}
+function fmtDate(d){
+  if(!d||!(d instanceof Date)||isNaN(d))return '';
+  const y=d.getUTCFullYear(),m=String(d.getUTCMonth()+1).padStart(2,'0'),dy=String(d.getUTCDate()).padStart(2,'0');
+  return `${dy}/${m}/${y}`;
+}
+function fmtAmt(v){return v==null||v===''?'':Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function getCatLabel(cat){
+  if(cat==='QS')return 'Quota Share';
+  if(cat==='AUTO')return 'Autofac';
+  if(cat==='SURPLUS')return 'Surplus';
+  return 'Other';
+}
+
+function getMonthLabel(){
+  const mIdx=+document.getElementById('cfg-month').value;
+  const year=document.getElementById('cfg-year').value;
+  return MONTH_NAMES[mIdx].toUpperCase()+' '+year;
+}
+
+function isMotorCls(cls){
+  const c=(cls||'').toUpperCase();
+  return c.includes('MOTOR')||c.includes('FLEET')||c.includes('BUY BACK')||c.includes('BUYBACK');
+}
+function isTobaccoCls(cls){
+  const c=(cls||'').toUpperCase();
+  return c==='HAIL'||c.includes('TOBACCO')||c==='THEFT';
+}
+
+function getStdClass(treaty,riskType){
+  const t=(treaty||'').trim(), r=(riskType||'').trim();
+  const tu=t.toUpperCase();
+  const p1=cfg.premiumRouting.find(m=>m.r&&m.t===t&&m.r===r);
+  if(p1)return p1.cls;
+  // P1.5: year-agnostic CONTAINS (treaty name overrides riskType)
+  if(tu.includes('MINERVA RE AUTOFAC'))              return 'Minerva Autofac';
+  if(tu.includes('MISC ACC SURPLUS'))                return 'Misc Acc Surplus treaty Minerva';
+  if(tu.includes('CROP')&&tu.includes('LIVESTOCK'))  return 'Non Tobacco Treaty';
+  if(tu.includes('MOTOR')||tu.includes('BRIGHT RE')||tu.includes('SPECIAL VEHICLES')) return 'Motor';
+  const p2=cfg.premiumRouting.find(m=>!m.r&&m.t===t);
+  if(p2)return p2.cls;
+  if(r&&cfg.minervaClassMap[r])return cfg.minervaClassMap[r];
+  return 'Others';
+}
+
+function getPreInfo(raw){
+  if(!raw)return{parent:'UNKNOWN',cat:'OTHER'};
+  if(cfg.premReGroups[raw])return cfg.premReGroups[raw];
+  const u=(raw||'').toUpperCase();
+  const cat=u.includes('QS')||u.includes('QUOTA')?'QS':u.includes('SURP')?'SURPLUS':'AUTO';
+  if(u.includes('EMERITUS'))return{parent:'EMERITUS RE',cat};
+  if(u.includes('FBC'))return{parent:'FBC RE',cat};
+  if(u.includes('FIRST')||u.includes('FMRE'))return{parent:'FIRST MUTUAL RE',cat};
+  if(u.includes('GRAND'))return{parent:'GRAND RE',cat};
+  if(u.includes('TROPICAL'))return{parent:'TROPICAL RE',cat};
+  if(u.includes('WAICA'))return{parent:'WAICA RE',cat};
+  if(u.includes('ZEP')||u.includes('ZEPRE'))return{parent:'ZEP RE',cat};
+  if(u.includes('ZB'))return{parent:'ZB RE',cat};
+  return{parent:raw,cat:'OTHER'};
+}
+
+// ── Parsers ────────────────────────────────────────────────────────────────────
+function parsePremium(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  const result=[];
+  let currentRe=null;
+  let buf=[];
+  const flush=(treatyName)=>{
+    const tn=(treatyName||'').trim()||'UNKNOWN';
+    for(const r of buf){r.treaty=tn;}
+    result.push(...buf);buf=[];
+  };
+  for(const row of rows){
+    if(!row)continue;
+    const a=row[0],b=row[1];
+    if(typeof a==='string'&&(a.includes('SIRIUS')||a.startsWith('Premium Bordereau for')))continue;
+    if(a==='Policy Holder')continue;
+    if(typeof a==='string'&&a.startsWith('Total for ')){flush(null);continue;}
+    if(typeof a==='string'&&typeof b==='number'){flush(a);continue;}
+    if(typeof a==='string'&&b==null){flush(null);currentRe=a.trim();continue;}
+    if(typeof b==='string'&&/^T\d\//.test(b)){
+      const info=getPreInfo(currentRe);
+      buf.push({
+        reinsurer:currentRe,treaty:null,
+        policyHolder:String(a||'').trim(),
+        policyNumber:String(b||'').trim(),
+        createdBy:String(row[2]||'').trim(),
+        agency:String(row[3]||'').trim(),
+        classBusiness:String(row[4]||'').trim(),
+        fromDateRaw:row[5],toDateRaw:row[6],
+        transType:String(row[7]||'').trim(),
+        transDateRaw:row[8],
+        docRef:String(row[9]||'').trim(),
+        sumInsured:tn(row[10]),grossPremium:tn(row[11]),
+        treatyPremium:tn(row[12]),commission:tn(row[13]),
+        facAmount:tn(row[14]),totalDue:tn(row[15]),
+        parentReinsurer:info.parent,reCategory:info.cat,
+      });
+    }
+  }
+  flush(null);
+  return result;
+}
+
+function parseClaims(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  const result=[];
+  let currentRe=null;
+  for(const row of rows){
+    if(!row)continue;
+    const a=row[0],b=row[1];
+    if(typeof a==='string'&&a.includes('SIRIUS'))continue;
+    if(a==='Claim Reference')continue;
+    if(typeof a==='string'&&a.startsWith('Total for '))continue;
+    if(typeof a==='string'&&(b==null||String(b).trim()==='')&&!(typeof a==='string'&&/^T\d\//.test(a))){
+      currentRe=a.trim();continue;
+    }
+    if(typeof a==='string'&&/^T\d\//.test(a)){
+      const info=cfg.claimsRouting[currentRe]||{parent:currentRe||'UNKNOWN',cat:'UNKNOWN'};
+      result.push({
+        reinsurer:currentRe,
+        claimRef:String(a).trim(),
+        policyNumber:String(b||'').trim(),
+        policyHolder:String(row[2]||'').trim(),
+        agency:String(row[3]||'').trim(),
+        classBusiness:String(row[4]||'').trim(),
+        transDateRaw:row[5],lossDateRaw:row[6],
+        fromDateRaw:row[7],toDateRaw:row[8],
+        transType:String(row[9]||'').trim(),
+        docRef:String(row[10]||'').trim(),
+        sumInsured:tn(row[11]),
+        claimsPaid:tn(row[12]),
+        parentReinsurer:info.parent,reCategory:info.cat,
+      });
+    }
+  }
+  return result;
+}
+
+// ── Normalisation ──────────────────────────────────────────────────────────────
+function getTreatyYear(treaty){
+  const m=(treaty||'').match(/^(\d{4})/);
+  return m?+m[1]:null;
+}
+
+function normPrem(rawRows,reportYear){
+  return rawRows.map(r=>{
+    const fromDate=excelToDate(r.fromDateRaw);
+    const toDate=excelToDate(r.toDateRaw);
+    const transDate=excelToDate(r.transDateRaw);
+    const stdCls=getStdClass(r.treaty,r.classBusiness);
+    const isMotor=stdCls==='Motor';
+    const net=f4(r.treatyPremium-r.commission);
+    const isRunoff=(getTreatyYear(r.treaty)||reportYear)<reportYear;
+    const brokerCommission=f4(r.treatyPremium*0.125);
+    const vatOnBrokerComm=f4(brokerCommission*(cfg.vatRate/100));
+    return{...r,fromDate,toDate,transDate,standardClass:stdCls,isMotor,net,isRunoff,brokerCommission,vatOnBrokerComm};
+  });
+}
+
+function normClaim(rawRows){
+  return rawRows.map(r=>{
+    const fromDate=excelToDate(r.fromDateRaw);
+    const toDate=excelToDate(r.toDateRaw);
+    const transDate=excelToDate(r.transDateRaw);
+    const lossDate=excelToDate(r.lossDateRaw);
+    const cls=(r.classBusiness||'').trim().toUpperCase();
+    let dest,stdCls;
+    if(isMotorCls(cls)){dest='MARSH';stdCls='Motor';}
+    else if(isTobaccoCls(cls)){dest='TOBACCO';stdCls='Tobacco Treaty';}
+    else if(r.reCategory==='AUTO'){dest='MINERVA';stdCls='Minerva Autofac';}
+    else if(r.reCategory==='SURPLUS'){dest='MINERVA';stdCls='Misc Acc Surplus treaty Minerva';}
+    else{dest='MINERVA';stdCls='Non Tobacco Treaty';}
+    return{...r,fromDate,toDate,transDate,lossDate,dest,standardClass:stdCls};
+  });
+}
+
+// ── Unknown-entry detection & resolution ───────────────────────────────────────
+function collectUnknowns(rawP,rawC){
+  const unknownPremRe=[...new Set(rawP.map(r=>r.reinsurer).filter(re=>re&&!cfg.premReGroups[re]))];
+  const unknownTreaties=[...new Set(
+    rawP.filter(r=>getStdClass(r.treaty,r.classBusiness)==='Others'&&r.treaty&&r.treaty!=='UNKNOWN')
+        .map(r=>r.treaty)
+  )];
+  const unknownClaimsRe=[...new Set(rawC.map(r=>r.reinsurer).filter(re=>re&&!cfg.claimsRouting[re]))];
+  const unknownCOBs=[...new Set(
+    rawP.filter(r=>getStdClass(r.treaty,r.classBusiness)==='Others'
+                &&r.classBusiness&&!cfg.minervaClassMap[r.classBusiness])
+        .map(r=>r.classBusiness)
+  )];
+  return{unknownPremRe,unknownTreaties,unknownClaimsRe,unknownCOBs};
+}
+
+function renderResolutionPanel(unknowns){
+  const knownParents=[...new Set([
+    ...Object.values(cfg.premReGroups).map(v=>v.parent),
+    ...Object.values(cfg.claimsRouting).map(v=>v.parent)
+  ])].sort();
+  const cats=['QS','AUTO','SURPLUS','OTHER'];
+  const stdClasses=[...cfg.minClasses,'Motor','Others'];
+
+  function parentSel(guessedParent){
+    const placeholder=guessedParent?'':'<option value="" disabled selected>— select parent —</option>';
+    const opts=knownParents.map(p=>`<option value="${escHtml(p)}"${p===guessedParent?' selected':''}>${escHtml(p)}</option>`).join('');
+    return `<div><select class="res-parent" onchange="onResParentChange(this)" style="width:100%">${placeholder}${opts}<option value="__new__">+ New reinsurer…</option></select>
+            <input class="res-new-parent" style="display:none;margin-top:4px;width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-family:var(--mono);font-size:11px;background:var(--surface);color:var(--text)" placeholder="Type parent RE name…"></div>`;
+  }
+  function catSel(guessedCat){
+    return `<select class="res-cat" style="width:100%">${cats.map(c=>`<option value="${c}"${c===guessedCat?' selected':''}>${c}</option>`).join('')}</select>`;
+  }
+  function clsSel(){
+    return `<select class="res-cls" style="width:100%">${stdClasses.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('')}</select>`;
+  }
+  function section(title,rows,cols3){
+    let h=`<div class="cfg-section">${escHtml(title)}</div><table class="map-table"><thead><tr>`;
+    h+=cols3?`<th>Group header (from file)</th><th>Parent Reinsurer</th><th>Category</th>`
+            :`<th>Name (from file)</th><th>Standard Class</th>`;
+    return h+`</tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  let html='';
+
+  if(unknowns.unknownPremRe.length){
+    let rows='';
+    for(const re of unknowns.unknownPremRe){
+      const guess=getPreInfo(re);
+      const isGuessed=knownParents.includes(guess.parent);
+      const badge=isGuessed?` <span class="res-badge">auto-guessed</span>`:'';
+      rows+=`<tr class="${isGuessed?'res-guessed':''}" data-key="${escHtml(re)}" data-section="premRe">
+        <td>${escHtml(re)}${badge}</td><td>${parentSel(isGuessed?guess.parent:'')}</td><td>${catSel(guess.cat)}</td></tr>`;
+    }
+    html+=section('Premium Reinsurer Groups',rows,true);
+  }
+  if(unknowns.unknownTreaties.length){
+    let rows='';
+    for(const t of unknowns.unknownTreaties)
+      rows+=`<tr data-key="${escHtml(t)}" data-section="treaty"><td>${escHtml(t)}</td><td>${clsSel()}</td></tr>`;
+    html+=section("Unknown Treaties (routing to 'Others')",rows,false);
+  }
+  if(unknowns.unknownClaimsRe.length){
+    let rows='';
+    for(const re of unknowns.unknownClaimsRe)
+      rows+=`<tr data-key="${escHtml(re)}" data-section="claimsRe"><td>${escHtml(re)}</td><td>${parentSel('')}</td><td>${catSel('QS')}</td></tr>`;
+    html+=section('Claims Reinsurer Groups',rows,true);
+  }
+  if(unknowns.unknownCOBs.length){
+    let rows='';
+    for(const cob of unknowns.unknownCOBs)
+      rows+=`<tr data-key="${escHtml(cob)}" data-section="cob"><td>${escHtml(cob)}</td><td>${clsSel()}</td></tr>`;
+    html+=section('Unknown Classes of Business',rows,false);
+  }
+
+  document.getElementById('res-body').innerHTML=html;
+  document.getElementById('panel-res').classList.add('res-active');
+  [1,2,3].forEach(i=>document.getElementById('panel'+i).classList.remove('active'));
+  document.getElementById('step1').classList.remove('active');
+  document.getElementById('step2').classList.add('active');
+}
+
+function onResParentChange(sel){
+  const inp=sel.parentElement.querySelector('.res-new-parent');
+  if(inp)inp.style.display=sel.value==='__new__'?'block':'none';
+}
+
+function saveResolutions(){
+  document.querySelectorAll('#res-body tr[data-section]').forEach(row=>{
+    const key=row.dataset.key, sec=row.dataset.section;
+    if(sec==='premRe'||sec==='claimsRe'){
+      const sel=row.querySelector('.res-parent');
+      let parent=sel.value;
+      if(parent==='__new__'||parent===''){
+        const inp=row.querySelector('.res-new-parent');
+        parent=(inp&&inp.value||'').trim();
+        if(!parent)return;
+      }
+      const cat=row.querySelector('.res-cat').value;
+      if(sec==='premRe')cfg.premReGroups[key]={parent,cat};
+      else cfg.claimsRouting[key]={parent,cat};
+    }else if(sec==='treaty'){
+      const cls=row.querySelector('.res-cls').value;
+      const tkey=key.trim();
+      if(!cfg.premiumRouting.find(m=>!m.r&&m.t===tkey))
+        cfg.premiumRouting.push({t:tkey,r:'',cls});
+    }else if(sec==='cob'){
+      cfg.minervaClassMap[key]=row.querySelector('.res-cls').value;
+    }
+  });
+  saveConfig();
+  _proceedToValidate();
+}
+
+function skipResolutions(){_proceedToValidate();}
+
+function _proceedToValidate(){
+  const reportYear=+document.getElementById('cfg-year').value||new Date().getFullYear();
+  const rawP=parsePremium(premWB);
+  const rawC=claimWB?parseClaims(claimWB):[];
+  pRows=normPrem(rawP,reportYear);
+  cRows=normClaim(rawC);
+  cashCalledKeys=new Set();cashCallData=[];
+  renderPremiumTab();renderClaimsTab();renderCashCallsTab();
+  switchTab('tab-prem');
+  goTo(2);
+}
+
+// ── Builders ───────────────────────────────────────────────────────────────────
+function buildMarsh(pr,cr){
+  const motorP=pr.filter(r=>r.isMotor);
+  const motorC=cr.filter(r=>r.dest==='MARSH');
+  const byParent={};
+  for(const re of cfg.marshRe)byParent[re.parent]={premRows:[],byTreaty:{},claimRows:[],byClaimsRe:{}};
+  for(const r of motorP){
+    const p=r.parentReinsurer;
+    if(!byParent[p])byParent[p]={premRows:[],byTreaty:{},claimRows:[],byClaimsRe:{}};
+    byParent[p].premRows.push(r);
+    if(!byParent[p].byTreaty[r.treaty])byParent[p].byTreaty[r.treaty]=[];
+    byParent[p].byTreaty[r.treaty].push(r);
+  }
+  for(const r of motorC){
+    const p=r.parentReinsurer;
+    if(!byParent[p])byParent[p]={premRows:[],byTreaty:{},claimRows:[],byClaimsRe:{}};
+    byParent[p].claimRows.push(r);
+    if(!byParent[p].byClaimsRe[r.reinsurer])byParent[p].byClaimsRe[r.reinsurer]=[];
+    byParent[p].byClaimsRe[r.reinsurer].push(r);
+  }
+  const summary=cfg.marshRe.map(re=>{
+    const d=byParent[re.parent]||{premRows:[],claimRows:[]};
+    const prem=f4(d.premRows.reduce((s,r)=>s+r.net,0));
+    const claims=f4(d.claimRows.reduce((s,r)=>s+r.claimsPaid,0));
+    return{parent:re.parent,label:re.label,sheet:re.sheet,prem,claims,net:f4(prem-claims)};
+  });
+  return{byParent,summary,motorP,motorC};
+}
+
+function buildMinerva(pr,cr){
+  const nonMotorP=pr.filter(r=>!r.isMotor);
+  const autofacP=nonMotorP.filter(r=>r.standardClass==='Minerva Autofac');
+  const minervaC=cr.filter(r=>r.dest==='MINERVA');
+  const claimsByClass={};
+  for(const r of minervaC)claimsByClass[r.standardClass]=(claimsByClass[r.standardClass]||0)+r.claimsPaid;
+  const claimsByRe={};
+  for(const r of minervaC){
+    if(!claimsByRe[r.reinsurer])claimsByRe[r.reinsurer]=[];
+    claimsByRe[r.reinsurer].push(r);
+  }
+  const autofacByParent={};
+  for(const r of autofacP){
+    if(!autofacByParent[r.parentReinsurer])autofacByParent[r.parentReinsurer]=[];
+    autofacByParent[r.parentReinsurer].push(r);
+  }
+  const summaryRows=cfg.minClasses.map(cls=>{
+    const rows=cls==='Grand autofac'?[]:nonMotorP.filter(r=>r.standardClass===cls);
+    const gp=f2(rows.reduce((s,r)=>s+r.grossPremium,0));
+    const tp=f2(rows.reduce((s,r)=>s+r.treatyPremium,0));
+    const comm=f2(rows.reduce((s,r)=>s+r.commission,0));
+    const claims=f2(claimsByClass[cls]||0);
+    const vat=f2(comm*(cfg.vatRate/100));
+    const net=f2(tp-comm-claims-vat);
+    return{cls,gp,tp,comm,claims,vat,net};
+  });
+  return{nonMotorP,autofacP,autofacByParent,minervaC,claimsByRe,claimsByClass,summaryRows};
+}
+
+// ── Export column arrays ───────────────────────────────────────────────────────
+const PREM_HDRS=['Policy Holder','Policy Number','Underwriter','Agency','Class of Business','From Date','To Date','Trans Type','Trans Date','Doc Ref','Sum Insured','Gross Premium','Treaty Premium','Commission','FAC Amount','Net'];
+const MARSH_PREM_HDRS=['Policy Holder','Policy Number','Underwriter','Agency','Class of Business','From Date','To Date','Trans Type','Trans Date','Doc Ref','Sum Insured','Gross Premium','Treaty Premium','Broker Commission','VAT on Broker Commission','Total Commission','FAC Amount','Net'];
+const MARSH_RET_HDRS=['Policy Holder','Policy Number','Underwriter','Agency','Parent Reinsurer','Category','Class of Business','From Date','To Date','Trans Type','Trans Date','Doc Ref','Sum Insured','Gross Premium','Treaty Premium','Broker Commission','VAT on Broker Commission','Total Commission','FAC Amount','Net'];
+const CLAIM_HDRS=['Claim Reference','Policy Number','Policy Holder','Agency','Class of Business','Standard Class','Category','Parent Reinsurer','Trans Date','Loss Date','From Date','To Date','Trans Type','Doc Ref','Sum Insured','Claims Paid',''];
+const MIN_RET_HDRS=['Policy Holder','Policy Number','Agency','Reinsurer','Category','Class of Business','Standard Class','Treaty','From Date','To Date','Trans Type','Trans Date','Doc Ref','Sum Insured','Gross Premium','Treaty Premium','Commission','Claims','Net Premium'];
+
+function premArr(r){
+  return[r.policyHolder,r.policyNumber,r.createdBy,r.agency,r.classBusiness,
+    fmtDate(r.fromDate),fmtDate(r.toDate),r.transType,fmtDate(r.transDate),r.docRef,
+    r.sumInsured,r.grossPremium,r.treatyPremium,r.commission,r.facAmount,r.net];
+}
+function marshPremArr(r){
+  return[r.policyHolder,r.policyNumber,r.createdBy,r.agency,r.classBusiness,
+    fmtDate(r.fromDate),fmtDate(r.toDate),r.transType,fmtDate(r.transDate),r.docRef,
+    r.sumInsured,r.grossPremium,r.treatyPremium,r.brokerCommission,r.vatOnBrokerComm,r.commission,r.facAmount,r.net];
+}
+function marshRetArr(r){
+  return[r.policyHolder,r.policyNumber,r.createdBy,r.agency,
+    r.parentReinsurer,getCatLabel(r.reCategory),r.classBusiness,
+    fmtDate(r.fromDate),fmtDate(r.toDate),r.transType,fmtDate(r.transDate),r.docRef,
+    r.sumInsured,r.grossPremium,r.treatyPremium,r.brokerCommission,r.vatOnBrokerComm,r.commission,r.facAmount,r.net];
+}
+function claimArr(r){
+  return[r.claimRef,r.policyNumber,r.policyHolder,r.agency,r.classBusiness,
+    r.standardClass,getCatLabel(r.reCategory),r.parentReinsurer,
+    fmtDate(r.transDate),fmtDate(r.lossDate),fmtDate(r.fromDate),fmtDate(r.toDate),
+    r.transType,r.docRef,r.sumInsured,r.claimsPaid,''];
+}
+function minRetArr(r){
+  const net=f4(r.treatyPremium-r.commission);
+  return[r.policyHolder,r.policyNumber,r.agency,r.parentReinsurer,
+    getCatLabel(r.reCategory),r.classBusiness,r.standardClass,r.treaty,
+    fmtDate(r.fromDate),fmtDate(r.toDate),r.transType,fmtDate(r.transDate),r.docRef,
+    r.sumInsured,r.grossPremium,r.treatyPremium,r.commission,0,net];
+}
+
+// ── Export: MARSH ──────────────────────────────────────────────────────────────
+function buildReinsSheet(re,data){
+  const aoa=[MARSH_PREM_HDRS];
+  const boldRows=[];
+  let gSI=0,gTP=0,gBComm=0,gVatComm=0,gComm=0,gFAC=0,gNet=0;
+  for(const[treaty,rows] of Object.entries(data.byTreaty)){
+    let tSI=0,tTP=0,tBComm=0,tVatComm=0,tComm=0,tFAC=0,tNet=0;
+    for(const r of rows){
+      aoa.push(marshPremArr(r));
+      tSI+=r.sumInsured;tTP+=r.treatyPremium;tBComm+=r.brokerCommission;tVatComm+=r.vatOnBrokerComm;tComm+=r.commission;tFAC+=r.facAmount;tNet+=r.net;
+    }
+    boldRows.push(aoa.length);
+    // align values with PREM_HDRS column positions: SI=10, GP=11(skip), TP=12, BComm=13, VatComm=14, TotalComm=15, FAC=16, Net=17
+    aoa.push([treaty,'','','','','','','','','',f2(tSI),'',f4(tTP),f4(tBComm),f4(tVatComm),f4(tComm),f4(tFAC),f4(tNet)]);
+    gSI+=tSI;gTP+=tTP;gBComm+=tBComm;gVatComm+=tVatComm;gComm+=tComm;gFAC+=tFAC;gNet+=tNet;
+  }
+  aoa.push(['TOTAL','','','','','','','','','',f2(gSI),'',f4(gTP),f4(gBComm),f4(gVatComm),f4(gComm),f4(gFAC),f4(gNet)]);
+  aoa.push([]);aoa.push([]);
+  // Claims section
+  let gClaims=0;
+  for(const[reName,rows] of Object.entries(data.byClaimsRe)){
+    aoa.push([reName]);
+    aoa.push(CLAIM_HDRS);
+    let grp=0;
+    for(const r of rows){aoa.push(claimArr(r));grp+=r.claimsPaid;}
+    // Claims Paid is at index 15 in CLAIM_HDRS
+    aoa.push(['Total for '+reName,'','','','','','','','','','','','','','',f4(grp),'']);
+    gClaims+=grp;
+    aoa.push([]);
+  }
+  if(data.claimRows.length>0){
+    aoa.push([re.label+' TOTAL CLAIMS','','','','','','','','','','','','','','',f4(gClaims),'']);
+  }
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  for(const r of boldRows){
+    const addr=XLSX.utils.encode_cell({r,c:0});
+    if(ws[addr])ws[addr].s={font:{bold:true}};
+  }
+  return ws;
+}
+
+function exportMarsh(isRunoff=false){
+  if(!marshData){toast('Generate returns first',true);return;}
+  const month=getMonthLabel();
+  const reportYear=+document.getElementById('cfg-year').value||new Date().getFullYear();
+  const cur=curCurrency;
+  const today=new Date().toLocaleDateString('en-GB');
+  const label=isRunoff?'Runoff':'Current';
+
+  const filtP=marshData.motorP.filter(r=>isRunoff?r.isRunoff:!r.isRunoff);
+  const byParent={};
+  for(const re of cfg.marshRe)byParent[re.parent]={premRows:[],byTreaty:{},claimRows:[],byClaimsRe:{}};
+  for(const r of filtP){
+    const p=r.parentReinsurer;
+    if(!byParent[p])byParent[p]={premRows:[],byTreaty:{},claimRows:[],byClaimsRe:{}};
+    byParent[p].premRows.push(r);
+    if(!byParent[p].byTreaty[r.treaty])byParent[p].byTreaty[r.treaty]=[];
+    byParent[p].byTreaty[r.treaty].push(r);
+  }
+  if(!isRunoff){
+    for(const r of marshData.motorC){
+      const p=r.parentReinsurer;
+      if(!byParent[p])byParent[p]={premRows:[],byTreaty:{},claimRows:[],byClaimsRe:{}};
+      byParent[p].claimRows.push(r);
+      if(!byParent[p].byClaimsRe[r.reinsurer])byParent[p].byClaimsRe[r.reinsurer]=[];
+      byParent[p].byClaimsRe[r.reinsurer].push(r);
+    }
+  }
+  const filtSummary=cfg.marshRe.map(re=>{
+    const d=byParent[re.parent];
+    const prem=f4(d.premRows.reduce((s,r)=>s+r.net,0));
+    const vat=f4(d.premRows.reduce((s,r)=>s+r.vatOnBrokerComm,0));
+    const claims=f4(d.claimRows.reduce((s,r)=>s+r.claimsPaid,0));
+    return{parent:re.parent,label:re.label,sheet:re.sheet,prem,vat,claims,net:f4(prem-vat-claims)};
+  });
+
+  const wb=XLSX.utils.book_new();
+  // Summary
+  const sumAoa=[[],[today],[`BRIGHT MOTOR QUOTA SHARE ${cur} SUMMARY — ${label.toUpperCase()}`],
+    ['Reinsurer','Premium','VAT on Broker Commission','Claims','Net Due']];
+  let tP=0,tV=0,tC=0,tN=0;
+  for(const r of filtSummary){
+    sumAoa.push([r.label,r.prem,r.vat,r.claims,r.net]);
+    tP+=r.prem;tV+=r.vat;tC+=r.claims;tN+=r.net;
+  }
+  sumAoa.push(['TOTAL',f4(tP),f4(tV),f4(tC),f4(tN)]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumAoa),'Summary');
+  // Per-reinsurer sheets
+  for(const re of cfg.marshRe){
+    XLSX.utils.book_append_sheet(wb,buildReinsSheet(re,byParent[re.parent]),re.sheet);
+  }
+  // RETURN sheet
+  const retAoa=[MARSH_RET_HDRS,...filtP.map(marshRetArr)];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(retAoa),'RETURN');
+  // CASH CALLS sheet (motor cash calls only)
+  if(cashCallData&&cashCallData.length){
+    const marshCC=cashCallData.filter(r=>r.dest==='MARSH');
+    if(marshCC.length){
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([CLAIM_HDRS,...marshCC.map(claimArr)]),'CASH CALLS');
+    }
+  }
+  const fname=`MARSH MOTOR RETURN ${label.toUpperCase()} ${month} ${cur}.xlsx`;
+  XLSX.writeFile(wb,fname);
+  toast(`MARSH ${label} exported — ${fname}`);
+}
+
+// ── Export: MINERVA ────────────────────────────────────────────────────────────
+function exportMinerva(isRunoff=false){
+  if(!minervaData){toast('Generate returns first',true);return;}
+  const month=getMonthLabel();
+  const cur=curCurrency;
+  const label=isRunoff?'Runoff':'Current';
+
+  const filtNonMotor=minervaData.nonMotorP.filter(r=>isRunoff?r.isRunoff:!r.isRunoff);
+  const filtAutofac=minervaData.autofacP.filter(r=>isRunoff?r.isRunoff:!r.isRunoff);
+  const filtAutofacByParent={};
+  for(const r of filtAutofac){
+    if(!filtAutofacByParent[r.parentReinsurer])filtAutofacByParent[r.parentReinsurer]=[];
+    filtAutofacByParent[r.parentReinsurer].push(r);
+  }
+
+  const filtClaimsByClass=isRunoff?{}:{...minervaData.claimsByClass};
+  const filtClaimsByRe=isRunoff?{}:minervaData.claimsByRe;
+
+  const filtSummaryRows=cfg.minClasses.map(cls=>{
+    const rows=cls==='Grand autofac'?[]:filtNonMotor.filter(r=>r.standardClass===cls);
+    const gp=f2(rows.reduce((s,r)=>s+r.grossPremium,0));
+    const tp=f2(rows.reduce((s,r)=>s+r.treatyPremium,0));
+    const comm=f2(rows.reduce((s,r)=>s+r.commission,0));
+    const claims=f2(filtClaimsByClass[cls]||0);
+    const vat=f2(comm*(cfg.vatRate/100));
+    const net=f2(tp-comm-claims-vat);
+    return{cls,gp,tp,comm,claims,vat,net};
+  });
+
+  const wb=XLSX.utils.book_new();
+  // SUMMARY
+  const sumAoa=[[],[],[`${month} TREATY RETURN - ${cur} — ${label.toUpperCase()}`],
+    ['Class of Business','Gross Premium','Treaty Premium','Commission','Claims','Vat on Commission','Net Premium']];
+  let tGP=0,tTP=0,tComm=0,tClaims=0,tVat=0,tNet=0;
+  for(const r of filtSummaryRows){
+    sumAoa.push([r.cls,r.gp||0,r.tp||0,r.comm||0,r.claims||0,r.vat||0,r.net||0]);
+    tGP+=r.gp;tTP+=r.tp;tComm+=r.comm;tClaims+=r.claims;tVat+=r.vat;tNet+=r.net;
+  }
+  sumAoa.push(['TOTAL',f2(tGP),f2(tTP),f2(tComm),f2(tClaims),f2(tVat),f2(tNet)]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumAoa),'SUMMARY');
+  // RETURN
+  const retAoa=[MIN_RET_HDRS,...filtNonMotor.map(minRetArr)];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(retAoa),'RETURN');
+  // MINERVA AUTOFAC
+  const afAoa=[PREM_HDRS];
+  let afGP=0,afTP=0,afComm=0,afFAC=0,afNet=0;
+  let isFirst=true;
+  for(const[parent,rows] of Object.entries(filtAutofacByParent)){
+    if(!isFirst){afAoa.push([]);afAoa.push(PREM_HDRS);}
+    isFirst=false;
+    let tSI=0,tGP=0,tTP=0,tComm=0,tFAC=0,tNet=0;
+    for(const r of rows){
+      afAoa.push(premArr(r));
+      tSI+=r.sumInsured;tGP+=r.grossPremium;tTP+=r.treatyPremium;tComm+=r.commission;tFAC+=r.facAmount;tNet+=r.net;
+    }
+    const afTreaty=(rows[0]&&rows[0].treaty)||'MINERVA RE AUTOFAC';
+    afAoa.push([afTreaty,f2(tSI),f4(tTP),f4(tComm),f4(tFAC),f4(tNet),'','','','','','','','','','']);
+    afGP+=tGP;afTP+=tTP;afComm+=tComm;afFAC+=tFAC;afNet+=tNet;
+  }
+  afAoa.push([]);
+  afAoa.push(['','','','','','','','','','','',f2(afGP),f4(afTP),f4(afComm),f4(afFAC),f4(afNet)]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(afAoa),'MINERVA AUTOFAC');
+  // GRAND RE AUTOFAC (placeholder)
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['GRAND RE AUTOFAC']]),'GRAND RE AUTOFAC');
+  // CLAIMS (flat)
+  const clmAoa=[CLAIM_HDRS,...Object.values(filtClaimsByRe).flat().map(claimArr)];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(clmAoa),'CLAIMS');
+  // CASH CALLS (minerva cash calls only)
+  if(cashCallData&&cashCallData.length){
+    const minCC=cashCallData.filter(r=>r.dest==='MINERVA');
+    if(minCC.length){
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([CLAIM_HDRS,...minCC.map(claimArr)]),'CASH CALLS');
+    }
+  }
+  const fname=`MINERVA ${cur} TREATY ${label.toUpperCase()} ${month}.xlsx`;
+  XLSX.writeFile(wb,fname);
+  toast(`MINERVA ${label} exported — ${fname}`);
+}
+
+// ── UI — Config init ───────────────────────────────────────────────────────────
+function initConfig(){
+  const now=new Date();
+  const prevMonthIdx=now.getMonth()===0?11:now.getMonth()-1;
+  const currentYear=now.getFullYear();
+  // Month dropdown
+  const mSel=document.getElementById('cfg-month');
+  MONTH_NAMES.forEach((m,i)=>{
+    const opt=document.createElement('option');
+    opt.value=i;opt.textContent=m;
+    if(i===prevMonthIdx)opt.selected=true;
+    mSel.appendChild(opt);
+  });
+  // Year dropdown
+  const ySel=document.getElementById('cfg-year');
+  for(let y=currentYear-11;y<=currentYear;y++){
+    const opt=document.createElement('option');
+    opt.value=y;opt.textContent=y;
+    if(y===currentYear)opt.selected=true;
+    ySel.appendChild(opt);
+  }
+}
+
+// ── UI — File loading ──────────────────────────────────────────────────────────
+function loadFile(e,type){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:false});
+      if(type==='treaty'){
+        premWB=wb;
+        setStatus('st',`✓ ${file.name}`,true);
+        document.getElementById('card-treaty').classList.add('loaded');
+        // New treaty file = new period; reset no-claims choice
+        noClaims=false;
+        document.getElementById('chk-no-claims').checked=false;
+        setStatus('sc','No file loaded',false);
+        document.getElementById('card-claims').classList.remove('loaded');
+        claimWB=null;
+      }else{
+        claimWB=wb;
+        noClaims=false;
+        document.getElementById('chk-no-claims').checked=false;
+        setStatus('sc',`✓ ${file.name}`,true);
+        document.getElementById('card-claims').classList.add('loaded');
+      }
+      // Reset validate state when new file is loaded
+      resetValidate();
+      checkReady();
+    }catch(err){toast('Error reading file: '+err.message,true);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetValidate(){
+  pRows=[];cRows=[];
+  cashCalledKeys=new Set();
+  cashCallData=[];
+  const ids=['prem-body','claims-body','cc-body'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  ['badge-prem','badge-claims','badge-cc','cnt-prem','cnt-claims','cnt-cc'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent='';
+  });
+}
+
+function setStatus(id,msg,ok){
+  const el=document.getElementById(id);
+  el.className='file-status'+(ok?' ok':'');
+  el.innerHTML=`<span class="status-dot"></span><span>${msg}</span>`;
+}
+
+function checkReady(){
+  const ok=premWB&&(claimWB||noClaims);
+  document.getElementById('btn-next1').disabled=!ok;
+  document.getElementById('hint1').textContent=
+    ok?(noClaims&&!claimWB?'Premium only — no claims this period':'Ready to validate')
+      :'Load both files to continue';
+}
+
+function toggleNoClaims(checked){
+  noClaims=checked;
+  if(checked){
+    claimWB=null;
+    document.getElementById('fc').value='';
+    setStatus('sc','— No claims this period —',true);
+    document.getElementById('card-claims').classList.add('loaded');
+  }else{
+    setStatus('sc','No file loaded',false);
+    document.getElementById('card-claims').classList.remove('loaded');
+  }
+  resetValidate();
+  checkReady();
+}
+
+// ── Parse & Preview ────────────────────────────────────────────────────────────
+function parseAndPreview(){
+  if(!premWB){toast('Load the premium bordereau first',true);return;}
+  if(!claimWB&&!noClaims){toast('Load the claims file or tick "No claims for this period"',true);return;}
+  try{
+    const rawP=parsePremium(premWB);
+    const rawC=claimWB?parseClaims(claimWB):[];
+    const unknowns=collectUnknowns(rawP,rawC);
+    if(unknowns.unknownPremRe.length||unknowns.unknownTreaties.length||
+       unknowns.unknownClaimsRe.length||unknowns.unknownCOBs.length){
+      renderResolutionPanel(unknowns);
+      return;
+    }
+    _proceedToValidate();
+  }catch(err){
+    toast('Error: '+err.message,true);
+    console.error(err);
+  }
+}
+
+// ── Generate ───────────────────────────────────────────────────────────────────
+function generate(){
+  if(!pRows.length){toast('Parse files first',true);return;}
+  try{
+    // Read checked cash calls
+    cashCalledKeys=new Set();
+    document.querySelectorAll('.cc-cb:checked').forEach(cb=>{
+      cashCalledKeys.add(cb.dataset.key);
+    });
+    const activeCRows=cRows.filter(r=>!cashCalledKeys.has(r.claimRef+'|'+r.standardClass));
+    cashCallData=cRows.filter(r=>cashCalledKeys.has(r.claimRef+'|'+r.standardClass));
+    marshData=buildMarsh(pRows,activeCRows);
+    minervaData=buildMinerva(pRows,activeCRows);
+    const motorCurrent=marshData.motorP.filter(r=>!r.isRunoff).length;
+    const motorRunoff=marshData.motorP.filter(r=>r.isRunoff).length;
+    const minCurrent=minervaData.nonMotorP.filter(r=>!r.isRunoff).length;
+    const minRunoff=minervaData.nonMotorP.filter(r=>r.isRunoff).length;
+    console.log(`[Treaty] Motor: ${motorCurrent} current + ${motorRunoff} runoff = ${marshData.motorP.length} total`);
+    console.log(`[Treaty] Non-motor: ${minCurrent} current + ${minRunoff} runoff = ${minervaData.nonMotorP.length} total`);
+    if(motorRunoff===0&&minRunoff===0){
+      console.warn('[Treaty] WARNING: 0 runoff rows detected. Check that Report Year dropdown matches your data year.');
+    }
+    updateCards();
+    goTo(3);
+  }catch(err){
+    toast('Error: '+err.message,true);
+    console.error(err);
+  }
+}
+
+// ── Tab rendering ──────────────────────────────────────────────────────────────
+function renderPremiumTab(){
+  const sample=pRows.slice(0,500);
+  const badge=`${pRows.length}`;
+  document.getElementById('badge-prem').textContent=badge;
+  document.getElementById('cnt-prem').textContent=`${sample.length} of ${pRows.length} rows`;
+  document.getElementById('prem-body').innerHTML=sample.map(r=>`
+    <tr>
+      <td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.reinsurer||'—'}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${r.treaty||''}">${(r.treaty||'').substring(0,28)}…</td>
+      <td>${r.isMotor?'<span class="badge badge-motor">Motor</span>':''}</td>
+      <td>${r.isRunoff?'<span class="badge badge-runoff">Runoff</span>':''}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${r.policyHolder}</td>
+      <td>${r.classBusiness}</td>
+      <td>${fmtDate(r.fromDate)}</td>
+      <td class="num">${fmtAmt(r.treatyPremium)}</td>
+      <td class="num">${fmtAmt(r.commission)}</td>
+      <td class="num" style="color:var(--green)">${fmtAmt(r.net)}</td>
+    </tr>`).join('');
+}
+
+function renderClaimsTab(){
+  const visible=cRows.filter(r=>r.dest!=='TOBACCO');
+  document.getElementById('badge-claims').textContent=`${visible.length}`;
+  document.getElementById('cnt-claims').textContent=`${visible.length} rows`;
+  document.getElementById('claims-body').innerHTML=visible.map(r=>`
+    <tr>
+      <td style="font-family:var(--mono);font-size:10px">${r.claimRef}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis">${r.policyHolder}</td>
+      <td>${r.classBusiness}</td>
+      <td>${r.standardClass}</td>
+      <td>${getCatLabel(r.reCategory)}</td>
+      <td>${r.parentReinsurer}</td>
+      <td>${fmtDate(r.transDate)}</td>
+      <td class="num">${fmtAmt(r.claimsPaid)}</td>
+    </tr>`).join('');
+}
+
+function buildCashCallsMap(rows){
+  const map={};
+  for(const r of rows){
+    if(r.dest==='TOBACCO')continue;
+    const key=r.claimRef+'|'+r.standardClass;
+    if(!map[key]){
+      map[key]={key,claimRef:r.claimRef,standardClass:r.standardClass,
+        policyHolder:r.policyHolder,policyNumber:r.policyNumber,
+        classBusiness:r.classBusiness,transDate:r.transDate,
+        totalClaims:0,reCount:0};
+    }
+    map[key].totalClaims=+(map[key].totalClaims+r.claimsPaid).toFixed(4);
+    map[key].reCount++;
+  }
+  return Object.values(map);
+}
+
+function renderCashCallsTab(){
+  const ccList=buildCashCallsMap(cRows);
+  document.getElementById('badge-cc').textContent=`${ccList.length}`;
+  document.getElementById('cnt-cc').textContent=`${ccList.length} unique claims`;
+  document.getElementById('cc-body').innerHTML=ccList.map(c=>{
+    const checked=cashCalledKeys.has(c.key)?'checked':'';
+    return`<tr class="${checked?'cc-selected':''}">
+      <td><input type="checkbox" class="cc-cb" data-key="${c.key}" ${checked} onchange="onCCChange(this)"></td>
+      <td style="font-family:var(--mono);font-size:10px">${c.claimRef}</td>
+      <td>${c.standardClass}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis">${c.policyHolder}</td>
+      <td style="font-family:var(--mono);font-size:10px">${c.policyNumber}</td>
+      <td>${c.classBusiness}</td>
+      <td>${fmtDate(c.transDate)}</td>
+      <td class="num">${fmtAmt(c.totalClaims)}</td>
+      <td class="num">${c.reCount}</td>
+    </tr>`;
+  }).join('');
+  updateCCBadge();
+}
+
+function onCCChange(cb){
+  const tr=cb.closest('tr');
+  if(cb.checked){
+    cashCalledKeys.add(cb.dataset.key);
+    tr.classList.add('cc-selected');
+  }else{
+    cashCalledKeys.delete(cb.dataset.key);
+    tr.classList.remove('cc-selected');
+  }
+  updateCCBadge();
+}
+
+function updateCCBadge(){
+  const n=document.querySelectorAll('.cc-cb:checked').length;
+  const badge=document.getElementById('badge-cc');
+  if(badge){badge.textContent=n>0?`${n} selected`:'0';}
+}
+
+function selectAllCC(checked){
+  document.querySelectorAll('.cc-cb').forEach(cb=>{
+    cb.checked=checked;
+    const tr=cb.closest('tr');
+    if(checked){cashCalledKeys.add(cb.dataset.key);tr.classList.add('cc-selected');}
+    else{cashCalledKeys.delete(cb.dataset.key);tr.classList.remove('cc-selected');}
+  });
+  updateCCBadge();
+}
+
+function switchTab(tabId){
+  const panel=document.getElementById('panel2');
+  panel.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tabId));
+  panel.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id===tabId));
+}
+
+// ── Cards ──────────────────────────────────────────────────────────────────────
+function updateCards(){
+  const m=marshData.summary.reduce((a,r)=>({p:a.p+r.prem,c:a.c+r.claims,n:a.n+r.net}),{p:0,c:0,n:0});
+  document.getElementById('marsh-rows').textContent=marshData.motorP.length.toLocaleString();
+  document.getElementById('marsh-prem').textContent=fmtAmt(m.p);
+  document.getElementById('marsh-claims').textContent=fmtAmt(m.c);
+  document.getElementById('marsh-net').textContent=fmtAmt(m.n);
+  document.getElementById('marsh-current').textContent=marshData.motorP.filter(r=>!r.isRunoff).length.toLocaleString();
+  document.getElementById('marsh-runoff').textContent=marshData.motorP.filter(r=>r.isRunoff).length.toLocaleString();
+
+  const mv=minervaData.summaryRows.reduce((a,r)=>({tp:a.tp+r.tp,cl:a.cl+r.claims,nt:a.nt+r.net}),{tp:0,cl:0,nt:0});
+  const activeCls=minervaData.summaryRows.filter(r=>r.tp||r.claims).length;
+  document.getElementById('min-rows').textContent=minervaData.nonMotorP.length.toLocaleString();
+  document.getElementById('min-classes').textContent=activeCls;
+  document.getElementById('min-prem').textContent=fmtAmt(mv.tp);
+  document.getElementById('min-claims').textContent=fmtAmt(mv.cl);
+  document.getElementById('min-net').textContent=fmtAmt(mv.nt);
+  document.getElementById('min-current').textContent=minervaData.nonMotorP.filter(r=>!r.isRunoff).length.toLocaleString();
+  document.getElementById('min-runoff').textContent=minervaData.nonMotorP.filter(r=>r.isRunoff).length.toLocaleString();
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function goTo(n){
+  document.getElementById('panel-res').classList.remove('res-active');
+  [1,2,3].forEach(i=>{
+    document.getElementById('panel'+i).classList.toggle('active',i===n);
+    const s=document.getElementById('step'+i);
+    s.classList.toggle('active',i===n);
+    s.classList.toggle('done',i<n);
+  });
+}
+
+function onVatChange(v){
+  cfg.vatRate=parseFloat(v)||VAT_RATE_DEFAULT;
+  saveConfig();
+}
+
+function setCur(c){
+  curCurrency=c;
+  document.getElementById('cur-usd').classList.toggle('active',c==='USD');
+  document.getElementById('cur-zwg').classList.toggle('active',c==='ZWG');
+}
+
+let toastT;
+function toast(msg,err=false){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast'+(err?' error':'')+' show';
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+function dov(e,id){e.preventDefault();document.getElementById(id).classList.add('dragover');}
+function dlv(id){document.getElementById(id).classList.remove('dragover');}
+function ddrop(e,type){
+  e.preventDefault();
+  const id=type==='treaty'?'card-treaty':'card-claims';
+  dlv(id);
+  const f=e.dataTransfer.files[0];
+  if(f)loadFile({target:{files:[f]}},type);
+}
+
+// ── Settings modal ─────────────────────────────────────────────────────────────
+let draft=null;
+let activeStab='stab-general';
+
+function openSettings(){
+  draft=JSON.parse(JSON.stringify(cfg));
+  document.getElementById('settings-overlay').style.display='flex';
+  activeStab='stab-general';
+  renderSettingsModal();
+}
+function closeSettings(){
+  document.getElementById('settings-overlay').style.display='none';
+  draft=null;
+}
+function switchStab(id){
+  activeStab=id;
+  document.querySelectorAll('#settings-overlay .tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.stab===id));
+  document.querySelectorAll('#settings-overlay .tab-pane').forEach(p=>p.classList.toggle('active',p.id===id));
+}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function stdClsOpts(sel){
+  return[...draft.minClasses,'Motor','Others'].map(c=>`<option value="${escHtml(c)}"${c===sel?' selected':''}>${escHtml(c)}</option>`).join('');
+}
+function catOpts(sel){
+  return['QS','AUTO','SURPLUS','OTHER'].map(c=>`<option value="${c}"${c===sel?' selected':''}>${c}</option>`).join('');
+}
+
+function renderSettingsModal(){
+  document.getElementById('stab-general').innerHTML=renderGeneralTab();
+  document.getElementById('stab-routing').innerHTML=renderRoutingTab();
+  document.getElementById('stab-mapping').innerHTML=renderMappingTab();
+  document.getElementById('stab-reins').innerHTML=renderReinsTab();
+  switchStab(activeStab);
+}
+function renderGeneralTab(){
+  const mc=draft.minClasses.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+      <div style="display:flex;gap:2px">
+        <button class="btn-icon" onclick="draftMC(${i},-1)"${i===0?' disabled':''}>↑</button>
+        <button class="btn-icon" onclick="draftMC(${i},1)"${i===draft.minClasses.length-1?' disabled':''}>↓</button>
+      </div>
+      <input class="cfg-select" style="flex:1;min-width:0" data-mc="${i}" value="${escHtml(c)}">
+      <button class="btn-icon" onclick="draftDelMC(${i})">🗑</button>
+    </div>`).join('');
+  return`<div style="margin-bottom:20px">
+    <label class="cfg-label" style="display:block;margin-bottom:6px">VAT on Commission (%)</label>
+    <input type="number" class="cfg-select" id="s-vat" min="0" max="100" step="0.1" value="${draft.vatRate}" style="width:110px">
+  </div>
+  <div>
+    <div class="cfg-label" style="margin-bottom:10px">MINERVA Summary Classes <span style="color:var(--muted);font-weight:400">(order = SUMMARY row order)</span></div>
+    <div id="s-mc-list">${mc}</div>
+    <button class="btn-secondary" onclick="draftAddMC()" style="margin-top:8px;font-size:11px">+ Add Class</button>
+  </div>`;
+}
+function renderRoutingTab(){
+  const rows=draft.premiumRouting.map((e,i)=>`
+    <tr>
+      <td><div style="display:flex;gap:2px">
+        <button class="btn-icon" onclick="draftMovePR(${i},-1)"${i===0?' disabled':''}>↑</button>
+        <button class="btn-icon" onclick="draftMovePR(${i},1)"${i===draft.premiumRouting.length-1?' disabled':''}>↓</button>
+      </div></td>
+      <td><input class="cfg-select" style="width:100%" data-tr-t="${i}" value="${escHtml(e.t)}"></td>
+      <td><input class="cfg-select" style="width:100%;min-width:90px" data-tr-r="${i}" value="${escHtml(e.r)}" placeholder="(any)"></td>
+      <td><select class="cfg-select" style="width:100%" data-tr-cls="${i}">${stdClsOpts(e.cls)}</select></td>
+      <td><button class="btn-icon" onclick="draftDelPR(${i})">🗑</button></td>
+    </tr>`).join('');
+  return`<div class="hint" style="margin-bottom:10px">P1.5 system rules (AUTOFAC, MISC ACC SURPLUS, CROP &amp; LIVESTOCK, MOTOR/BRIGHT RE) are built-in and take priority.</div>
+  <table class="map-table"><thead><tr>
+    <th style="width:56px">Order</th><th>Treaty Name</th><th style="width:130px">Risk Type</th><th style="width:160px">Standard Class</th><th style="width:34px"></th>
+  </tr></thead><tbody id="s-routing-body">${rows}</tbody></table>
+  <button class="btn-secondary" onclick="draftAddPR()" style="margin-top:8px;font-size:11px">+ Add Treaty Rule</button>`;
+}
+function renderMappingTab(){
+  const rows=Object.entries(draft.minervaClassMap).map(([k,v],i)=>`
+    <tr>
+      <td><input class="cfg-select" style="width:100%" data-cm-k="${i}" value="${escHtml(k)}"></td>
+      <td><select class="cfg-select" style="width:100%" data-cm-v="${i}">${stdClsOpts(v)}</select></td>
+      <td><button class="btn-icon" onclick="draftDelCM(${i})">🗑</button></td>
+    </tr>`).join('');
+  return`<table class="map-table"><thead><tr>
+    <th>Class of Business</th><th style="width:200px">Standard Class</th><th style="width:34px"></th>
+  </tr></thead><tbody id="s-mapping-body">${rows}</tbody></table>
+  <button class="btn-secondary" onclick="draftAddCM()" style="margin-top:8px;font-size:11px">+ Add Mapping</button>`;
+}
+function renderReinsTab(){
+  const pgRows=Object.entries(draft.premReGroups).map(([k,v],i)=>`
+    <tr>
+      <td><input class="cfg-select" style="width:100%" data-pg-key="${i}" value="${escHtml(k)}"></td>
+      <td><input class="cfg-select" style="width:100%" data-pg-par="${i}" value="${escHtml(v.parent)}"></td>
+      <td><select class="cfg-select" style="width:100%;min-width:80px" data-pg-cat="${i}">${catOpts(v.cat)}</select></td>
+      <td><button class="btn-icon" onclick="draftDelPG(${i})">🗑</button></td>
+    </tr>`).join('');
+  const crRows=Object.entries(draft.claimsRouting).map(([k,v],i)=>`
+    <tr>
+      <td><input class="cfg-select" style="width:100%" data-cr-key="${i}" value="${escHtml(k)}"></td>
+      <td><input class="cfg-select" style="width:100%" data-cr-par="${i}" value="${escHtml(v.parent)}"></td>
+      <td><select class="cfg-select" style="width:100%;min-width:80px" data-cr-cat="${i}">${catOpts(v.cat)}</select></td>
+      <td><button class="btn-icon" onclick="draftDelCR(${i})">🗑</button></td>
+    </tr>`).join('');
+  const mrRows=draft.marshRe.map((e,i)=>`
+    <tr>
+      <td style="width:56px"><div style="display:flex;gap:2px">
+        <button class="btn-icon" onclick="draftMoveMR(${i},-1)"${i===0?' disabled':''}>↑</button>
+        <button class="btn-icon" onclick="draftMoveMR(${i},1)"${i===draft.marshRe.length-1?' disabled':''}>↓</button>
+      </div></td>
+      <td><input class="cfg-select" style="width:100%" data-mr-par="${i}" value="${escHtml(e.parent)}"></td>
+      <td><input class="cfg-select" style="width:100%" data-mr-sht="${i}" value="${escHtml(e.sheet)}"></td>
+      <td><input class="cfg-select" style="width:100%" data-mr-lbl="${i}" value="${escHtml(e.label)}"></td>
+      <td><button class="btn-icon" onclick="draftDelMR(${i})">🗑</button></td>
+    </tr>`).join('');
+  return`<div class="cfg-section">Premium Reinsurer Groups</div>
+  <table class="map-table"><thead><tr>
+    <th>Group Header (exact)</th><th>Parent Reinsurer</th><th style="width:90px">Category</th><th style="width:34px"></th>
+  </tr></thead><tbody id="s-prem-re-body">${pgRows}</tbody></table>
+  <button class="btn-secondary" onclick="draftAddPG()" style="margin-top:6px;margin-bottom:20px;font-size:11px">+ Add</button>
+  <div class="cfg-section">Claims Reinsurer Groups</div>
+  <div class="hint" style="margin-bottom:8px">Adding a new reinsurer here lets it be parsed from the claims file (e.g. TRANSAXIS RE).</div>
+  <table class="map-table"><thead><tr>
+    <th>Group Header (exact)</th><th>Parent Reinsurer</th><th style="width:90px">Category</th><th style="width:34px"></th>
+  </tr></thead><tbody id="s-claims-re-body">${crRows}</tbody></table>
+  <button class="btn-secondary" onclick="draftAddCR()" style="margin-top:6px;margin-bottom:20px;font-size:11px">+ Add</button>
+  <div class="cfg-section">MARSH Output Reinsurers</div>
+  <div class="hint" style="margin-bottom:8px">Each entry generates one sheet in the MARSH workbook.</div>
+  <table class="map-table"><thead><tr>
+    <th style="width:56px">↑↓</th><th>Parent Reinsurer</th><th>Sheet Name</th><th>Display Label</th><th style="width:34px"></th>
+  </tr></thead><tbody id="s-marsh-re-body">${mrRows}</tbody></table>
+  <button class="btn-secondary" onclick="draftAddMR()" style="margin-top:6px;font-size:11px">+ Add</button>`;
+}
+
+// Sync helpers — read form DOM → draft before any structural mutation
+function syncMC(){draft.minClasses=[...document.querySelectorAll('#s-mc-list [data-mc]')].map(el=>el.value.trim()).filter(Boolean);}
+function syncPR(){
+  const ts=[...document.querySelectorAll('#s-routing-body [data-tr-t]')];
+  const rs=[...document.querySelectorAll('#s-routing-body [data-tr-r]')];
+  const cs=[...document.querySelectorAll('#s-routing-body [data-tr-cls]')];
+  draft.premiumRouting=ts.map((el,i)=>({t:el.value.trim(),r:(rs[i]||{}).value||'',cls:(cs[i]||{}).value||'Others'})).filter(e=>e.t);
+}
+function syncCM(){
+  const ks=[...document.querySelectorAll('#s-mapping-body [data-cm-k]')];
+  const vs=[...document.querySelectorAll('#s-mapping-body [data-cm-v]')];
+  const obj={};ks.forEach((el,i)=>{if(el.value.trim()&&vs[i])obj[el.value.trim()]=vs[i].value;});
+  if(Object.keys(obj).length)draft.minervaClassMap=obj;
+}
+function syncPG(){
+  const ks=[...document.querySelectorAll('#s-prem-re-body [data-pg-key]')];
+  const ps=[...document.querySelectorAll('#s-prem-re-body [data-pg-par]')];
+  const cs=[...document.querySelectorAll('#s-prem-re-body [data-pg-cat]')];
+  const obj={};ks.forEach((el,i)=>{if(el.value.trim()&&ps[i]&&cs[i])obj[el.value.trim()]={parent:ps[i].value.trim(),cat:cs[i].value};});
+  if(Object.keys(obj).length)draft.premReGroups=obj;
+}
+function syncCR(){
+  const ks=[...document.querySelectorAll('#s-claims-re-body [data-cr-key]')];
+  const ps=[...document.querySelectorAll('#s-claims-re-body [data-cr-par]')];
+  const cs=[...document.querySelectorAll('#s-claims-re-body [data-cr-cat]')];
+  const obj={};ks.forEach((el,i)=>{if(el.value.trim()&&ps[i]&&cs[i])obj[el.value.trim()]={parent:ps[i].value.trim(),cat:cs[i].value};});
+  if(Object.keys(obj).length)draft.claimsRouting=obj;
+}
+function syncMR(){
+  const ps=[...document.querySelectorAll('#s-marsh-re-body [data-mr-par]')];
+  const ss=[...document.querySelectorAll('#s-marsh-re-body [data-mr-sht]')];
+  const ls=[...document.querySelectorAll('#s-marsh-re-body [data-mr-lbl]')];
+  draft.marshRe=ps.map((el,i)=>({parent:el.value.trim(),sheet:(ss[i]||{}).value||'',label:(ls[i]||{}).value||''})).filter(e=>e.parent);
+}
+function syncVat(){const el=document.getElementById('s-vat');if(el)draft.vatRate=parseFloat(el.value)||15;}
+
+// Draft structural mutations (sync first, mutate, re-render)
+function draftMC(i,d){syncMC();const a=draft.minClasses;[a[i],a[i+d]]=[a[i+d],a[i]];renderSettingsModal();}
+function draftDelMC(i){syncMC();draft.minClasses.splice(i,1);renderSettingsModal();}
+function draftAddMC(){syncMC();draft.minClasses.push('');renderSettingsModal();}
+function draftMovePR(i,d){syncPR();const a=draft.premiumRouting;[a[i],a[i+d]]=[a[i+d],a[i]];renderSettingsModal();}
+function draftDelPR(i){syncPR();draft.premiumRouting.splice(i,1);renderSettingsModal();}
+function draftAddPR(){syncPR();draft.premiumRouting.push({t:'',r:'',cls:'Others'});renderSettingsModal();}
+function draftDelCM(i){syncCM();const e=Object.entries(draft.minervaClassMap);e.splice(i,1);draft.minervaClassMap=Object.fromEntries(e);renderSettingsModal();}
+function draftAddCM(){syncCM();draft.minervaClassMap['']='Others';renderSettingsModal();}
+function draftDelPG(i){syncPG();const e=Object.entries(draft.premReGroups);e.splice(i,1);draft.premReGroups=Object.fromEntries(e);renderSettingsModal();}
+function draftAddPG(){syncPG();draft.premReGroups['']={parent:'',cat:'AUTO'};renderSettingsModal();}
+function draftDelCR(i){syncCR();const e=Object.entries(draft.claimsRouting);e.splice(i,1);draft.claimsRouting=Object.fromEntries(e);renderSettingsModal();}
+function draftAddCR(){syncCR();draft.claimsRouting['']={parent:'',cat:'AUTO'};renderSettingsModal();}
+function draftMoveMR(i,d){syncMR();const a=draft.marshRe;[a[i],a[i+d]]=[a[i+d],a[i]];renderSettingsModal();}
+function draftDelMR(i){syncMR();draft.marshRe.splice(i,1);renderSettingsModal();}
+function draftAddMR(){syncMR();draft.marshRe.push({parent:'',sheet:'',label:''});renderSettingsModal();}
+
+function saveSettings(){
+  syncVat();syncMC();syncPR();syncCM();syncPG();syncCR();syncMR();
+  cfg=JSON.parse(JSON.stringify(draft));
+  saveConfig();
+  closeSettings();
+  toast('Settings saved');
+}
+function resetAndRender(){
+  resetConfig();
+  draft=JSON.parse(JSON.stringify(cfg));
+  renderSettingsModal();
+  toast('Reset to defaults');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  initConfig();
+  loadConfig();
+  const vatEl=document.getElementById('cfg-vat');
+  if(vatEl)vatEl.value=cfg.vatRate;
+});
+</script>
+</body>
+</html>

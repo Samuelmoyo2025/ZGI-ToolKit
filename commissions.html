@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commission Reconciliation — Zimnat General Insurance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --bg:#F5F6F8;--surface:#FFFFFF;--surface2:#F0F2F5;--border:#E4E7EC;
+    --accent:#00A651;--accent2:#1A6FC4;--green:#12B76A;--red:#F04438;
+    --text:#101828;--muted:#667085;
+    --mono:'Inter',sans-serif;--sans:'Inter',sans-serif;--display:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+  body::before{display:none}
+  .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+  header{padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:36px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+  .brand{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+  h1{font-family:var(--display);font-size:clamp(20px,3.5vw,34px);font-weight:700;line-height:1.15;letter-spacing:-.3px}
+  h1 span{color:var(--accent)}
+  .header-meta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.8}
+
+  .steps{display:flex;align-items:center;margin-bottom:32px}
+  .step{display:flex;align-items:center;gap:10px}
+  .step-num{width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;transition:all .2s}
+  .step.active .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
+  .step.done .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
+  .step-label{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--muted);transition:color .2s;white-space:nowrap}
+  .step.active .step-label{color:var(--accent);font-weight:600}
+  .step.done .step-label{color:var(--accent)}
+  .step-line{flex:1;height:1px;background:var(--border);margin:0 14px;min-width:16px}
+
+  .panel{display:none}.panel.active{display:block}
+
+  .upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px}
+  @media(max-width:900px){.upload-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.upload-grid{grid-template-columns:1fr}}
+  .upload-card{background:var(--surface);border:1.5px dashed var(--border);border-radius:12px;padding:26px 22px;transition:all .2s;position:relative;overflow:hidden}
+  .upload-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .2s}
+  .upload-card:hover,.upload-card.dragover{border-color:var(--accent);background:#F0FAF5}
+  .upload-card:hover::before,.upload-card.dragover::before{opacity:1}
+  .upload-card.loaded{border-color:var(--accent2);border-style:solid;background:#EAF7EF}
+  .upload-card.loaded::before{background:linear-gradient(90deg,var(--accent2),transparent);opacity:1}
+  .card-tag{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+  .card-title{font-family:var(--display);font-size:15px;font-weight:700;margin-bottom:5px}
+  .card-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+  .upload-btn{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 14px;border-radius:6px;cursor:pointer;transition:all .15s}
+  .upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .file-status{margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .file-status.ok{color:var(--accent2)}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+  input[type=file]{display:none}
+
+  .config-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 22px;margin-bottom:24px;display:flex;align-items:center;gap:28px;flex-wrap:wrap}
+  .config-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .config-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:6px 11px;width:80px;outline:none;transition:border-color .15s}
+  .config-input:focus{border-color:var(--accent)}
+  .config-note{font-size:11px;color:var(--muted);margin-left:auto}
+
+  .btn-primary{background:var(--accent);color:#fff;border:none;font-family:var(--display);font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:9px}
+  .btn-primary:hover{background:#009147;transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 18px;border-radius:7px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:7px}
+  .btn-secondary:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .btn-hint{font-size:12px;color:var(--muted)}
+
+  .classify-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px}
+  .classify-title{font-family:var(--display);font-size:19px;font-weight:700}
+  .classify-desc{font-size:12px;color:var(--muted);margin-top:4px}
+  .classify-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:9px;margin-bottom:24px}
+  .agent-card{background:var(--surface);border:1.5px solid var(--border);border-radius:9px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:border-color .15s}
+  .agent-card.individual{border-color:rgba(46,204,113,.3);background:rgba(46,204,113,.04)}
+  .agent-card.corporate{border-color:rgba(0,166,81,.3);background:rgba(0,166,81,.04)}
+  .agent-name{font-family:var(--mono);font-size:11px;font-weight:500}
+  .agent-comm{font-size:11px;color:var(--muted);margin-top:2px}
+  .toggle-wrap{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0}
+  .toggle-opt{font-family:var(--mono);font-size:10px;padding:5px 9px;cursor:pointer;transition:all .15s;color:var(--muted);user-select:none}
+  .toggle-opt.sel-ind{background:rgba(46,204,113,.2);color:var(--green)}
+  .toggle-opt.sel-corp{background:rgba(0,166,81,.2);color:var(--accent)}
+
+  .stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;opacity:0;transform:translateY(12px);transition:all .4s}
+  .stats-bar.visible{opacity:1;transform:none}
+  @media(max-width:900px){.stats-bar{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:600px){.stats-bar{grid-template-columns:repeat(2,1fr)}}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+  .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+  .stat-card.total::after{background:var(--muted)}
+  .stat-card.payable::after{background:var(--green)}
+  .stat-card.journal::after{background:var(--accent2)}
+  .stat-card.notpay::after{background:var(--red)}
+  .stat-card.amount::after{background:var(--accent)}
+  .stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .stat-value{font-family:var(--display);font-size:26px;font-weight:800;line-height:1}
+  .stat-card.total .stat-value{color:var(--text)}
+  .stat-card.payable .stat-value{color:var(--green)}
+  .stat-card.notpay .stat-value{color:var(--red)}
+  .stat-card.amount .stat-value{color:var(--accent);font-size:20px}
+  .stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+  .tab-bar{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto}
+  .tab{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:9px 16px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px;white-space:nowrap}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--accent);border-color:var(--accent)}
+  .tab .cnt{background:var(--surface2);border-radius:20px;padding:2px 7px;font-size:10px;margin-left:4px}
+  .tab.active .cnt{background:rgba(0,166,81,.15);color:var(--accent)}
+
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .table-toolbar{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap}
+  .search-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 13px;width:230px;outline:none;transition:border-color .15s}
+  .search-box:focus{border-color:var(--accent)}
+  .search-box::placeholder{color:var(--muted)}
+  .export-btn{background:var(--surface2);border:1px solid var(--border);color:var(--accent2);font-family:var(--mono);font-size:11px;padding:7px 15px;border-radius:6px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+  .export-btn:hover{border-color:var(--accent2);background:rgba(34,119,192,.08)}
+  .table-container{overflow-x:auto;max-height:480px;overflow-y:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  thead{position:sticky;top:0;z-index:2}
+  th{background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
+  td{padding:9px 12px;border-bottom:1px solid rgba(212,216,228,.5);white-space:nowrap;font-family:var(--mono);font-size:11px}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(0,166,81,.04)}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px}
+  .bg{background:rgba(46,204,113,.12);color:var(--green)}
+  .br{background:rgba(231,76,60,.12);color:var(--red)}
+  .badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+  .bm{background:rgba(34,119,192,.1);color:var(--accent2);padding:2px 7px;border-radius:4px;font-size:10px}
+  .num{text-align:right}
+  .ap{color:var(--accent)}
+  .ac{color:var(--accent2)}
+  .agent-pill{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+  .empty-state p{font-family:var(--mono);font-size:12px;margin-top:10px}
+
+  /* Journal match badge */
+  .badge-j{background:rgba(34,119,192,.12);color:var(--accent2)}
+  /* Variance colour cells */
+  .var-cell{display:inline-block;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:11px;white-space:nowrap}
+  .var-exact{background:#D4EDDA;color:#1A7A40}
+  .var-round{background:#E8F8EF;color:#2E9955}
+  .var-over{background:#D0E4F5;color:#1A5FAD}
+  .var-under{background:#FDEBD0;color:#C0612A}
+  .var-none{color:var(--muted);font-family:var(--mono);font-size:11px}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);color:var(--text);font-family:var(--mono);font-size:12px;padding:13px 18px;border-radius:8px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:100;max-width:340px}
+  .toast.show{transform:none;opacity:1}
+  .toast.error{border-left-color:var(--red)}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(30,37,53,.15);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <div class="brand"><a href="index.html" style="color:var(--muted);text-decoration:none">&larr; Main Menu</a> &nbsp;/&nbsp; Zimnat General Insurance &nbsp;/&nbsp; Finance Operations</div>
+      <h1>Commission <span>Reconciliation</span></h1>
+    </div>
+    <div class="header-meta">Agent Commissions Report<br>vs Receipt Media Status<br>16th → 15th Monthly Cycle</div>
+  </header>
+
+  <div class="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div><div class="step-label">Upload</div></div>
+    <div class="step-line"></div>
+    <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Classify Agents</div></div>
+    <div class="step-line"></div>
+    <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">Results</div></div>
+  </div>
+
+  <!-- PANEL 1: Upload -->
+  <div class="panel active" id="panel1">
+    <div class="upload-grid">
+      <div class="upload-card" id="card-comm" ondragover="dov(event,'card-comm')" ondragleave="dlv('card-comm')" ondrop="ddrop(event,'comm')">
+        <div class="card-tag">Source 01</div>
+        <div class="card-title">Agent Commissions Report</div>
+        <div class="card-desc">Raw PURE export — Agent Statement covering the 16th to 15th period.</div>
+        <label class="upload-btn" onclick="document.getElementById('fc').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Choose .xlsx file
+        </label>
+        <input type="file" id="fc" accept=".xlsx,.xls" onchange="loadFile(event,'comm')">
+        <div class="file-status" id="sc"><span class="status-dot"></span><span>No file loaded</span></div>
+      </div>
+      <div class="upload-card" id="card-rec" ondragover="dov(event,'card-rec')" ondragleave="dlv('card-rec')" ondrop="ddrop(event,'rec')">
+        <div class="card-tag">Source 02</div>
+        <div class="card-title">Receipt Media Status Report</div>
+        <div class="card-desc">Raw PURE export — cleared receipts with policy numbers for the same period.</div>
+        <label class="upload-btn" onclick="document.getElementById('fr').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Choose .xlsx file
+        </label>
+        <input type="file" id="fr" accept=".xlsx,.xls" onchange="loadFile(event,'rec')">
+        <div class="file-status" id="sr"><span class="status-dot"></span><span>No file loaded</span></div>
+      </div>
+      <div class="upload-card" id="card-jnl" ondragover="dov(event,'card-jnl')" ondragleave="dlv('card-jnl')" ondrop="ddrop(event,'journals')">
+        <div class="card-tag">Source 03 &nbsp;<span style="font-size:9px;opacity:.6">Optional</span></div>
+        <div class="card-title">Daily Audit Journals Report</div>
+        <div class="card-desc">PURE journals export — used to match premium payments recorded as journal entries rather than receipts.</div>
+        <label class="upload-btn" onclick="document.getElementById('fj').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Choose .xlsx file
+        </label>
+        <input type="file" id="fj" accept=".xlsx,.xls" onchange="loadFile(event,'journals')">
+        <div class="file-status" id="sj"><span class="status-dot"></span><span>No file loaded — journal matching disabled</span></div>
+      </div>
+    </div>
+
+    <div class="config-bar">
+      <div>
+        <div class="config-label">Currency</div>
+        <div style="display:flex;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <div class="toggle-opt sel-corp" id="cur-usd" onclick="setCurrency('USD')" style="padding:6px 14px;font-size:11px">USD</div>
+          <div class="toggle-opt" id="cur-zwg" onclick="setCurrency('ZWG')" style="padding:6px 14px;font-size:11px">ZWG</div>
+        </div>
+      </div>
+      <div><div class="config-label">Corporate WHT %</div><input type="number" class="config-input" id="cfg-wht" value="20" min="0" max="100" step="0.1"></div>
+      <div><div class="config-label">Corporate VAT %</div><input type="number" class="config-input" id="cfg-vat" value="15.5" min="0" max="100" step="0.1"></div>
+      <div class="config-note">Adjust currency and tax rates before proceeding.</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btn-next" onclick="goToClassify()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Next: Classify Agents
+      </button>
+      <span class="btn-hint" id="upload-hint">Load Sources 01 &amp; 02 to continue (Source 03 optional)</span>
+    </div>
+  </div>
+
+  <!-- PANEL 2: Classify -->
+  <div class="panel" id="panel2">
+    <div class="classify-header">
+      <div>
+        <div class="classify-title">Classify Agents</div>
+        <div class="classify-desc">Mark each agent as Individual or Corporate. Corporates attract WHT and VAT. This determines the summary sheets.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="setAll('individual')">All Individual</button>
+        <button class="btn-secondary" onclick="setAll('corporate')">All Corporate</button>
+      </div>
+    </div>
+    <div class="classify-grid" id="cgrid"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goTo(1)">← Back</button>
+      <button class="btn-primary" onclick="runRecon()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run Reconciliation
+      </button>
+    </div>
+  </div>
+
+  <!-- PANEL 3: Results -->
+  <div class="panel" id="panel3">
+    <div class="stats-bar" id="sbar">
+      <div class="stat-card total"><div class="stat-label">Total Invoices</div><div class="stat-value" id="sv-tot">—</div><div class="stat-sub" id="sv-ag">—</div></div>
+      <div class="stat-card payable"><div class="stat-label">Receipt Matched</div><div class="stat-value" id="sv-pay">—</div><div class="stat-sub" id="sv-pp">—</div></div>
+      <div class="stat-card journal"><div class="stat-label">Journal Matched</div><div class="stat-value" id="sv-jnl" style="color:var(--accent2)">—</div><div class="stat-sub" id="sv-jp">—</div></div>
+      <div class="stat-card notpay"><div class="stat-label">Still Unmatched</div><div class="stat-value" id="sv-not">—</div><div class="stat-sub" id="sv-np">—</div></div>
+      <div class="stat-card amount"><div class="stat-label">Payable Amount</div><div class="stat-value" id="sv-amt">—</div><div class="stat-sub" id="sv-wh">—</div></div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('payable')">Payable <span class="cnt" id="tc-p">0</span></div>
+      <div class="tab" onclick="switchTab('withheld')">Withheld <span class="cnt" id="tc-w">0</span></div>
+      <div class="tab" onclick="switchTab('all')">All Records <span class="cnt" id="tc-a">0</span></div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <input type="text" class="search-box" id="sbox" placeholder="Search policy, insured, agent..." oninput="filterTable()">
+        <button class="export-btn" onclick="exportExcel()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export Full Report
+        </button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead><tr>
+            <th>Status</th><th>Type</th><th>Agent</th><th>Policy No.</th><th>Insured</th>
+            <th>Trans Type</th><th>Date</th><th class="num">Gross Prem</th>
+            <th class="num">Comm</th><th class="num">Comm %</th>
+            <th>Settlement Ref</th><th>Settlement Date</th><th>Media Type</th>
+            <th class="num">Settled Amt</th><th class="num">Variance</th><th>Match</th>
+          </tr></thead>
+          <tbody id="tbody"><tr><td colspan="16"><div class="empty-state"><p>No data yet</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:14px"><button class="btn-secondary" onclick="goTo(1)">← Start Over</button></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let commData=null, recData=null, journalData=null, results=[], agentTypes={}, curTab='payable', curSearch='', currency='USD';
+
+// CURRENCY
+function setCurrency(c){
+  currency=c;
+  document.getElementById('cur-usd').className='toggle-opt'+(c==='USD'?' sel-corp':'');
+  document.getElementById('cur-zwg').className='toggle-opt'+(c==='ZWG'?' sel-corp':'');
+}
+
+// NAV
+function goTo(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('panel'+i).classList.toggle('active',i===n);
+    const s=document.getElementById('step'+i);
+    s.classList.remove('active','done');
+    if(i===n)s.classList.add('active'); else if(i<n)s.classList.add('done');
+  });
+}
+function goToClassify(){ buildGrid(); goTo(2); }
+
+// FILE LOAD
+function loadFile(e,type){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+      if(type==='comm'){
+        commData=parseComm(wb);
+        console.log('[Comm] parsed:',commData.length,'sample:',commData[0]);
+        setStatus('sc',`✓ ${file.name} — ${commData.length} invoices`,true);
+        document.getElementById('card-comm').classList.add('loaded');
+      } else if(type==='rec'){
+        recData=parseRec(wb);
+        console.log('[Rec] policies:',recData.size,'sample:',[...recData.entries()][0]);
+        setStatus('sr',`✓ ${file.name} — ${recData.size} receipted policies`,true);
+        document.getElementById('card-rec').classList.add('loaded');
+      } else {
+        journalData=parseJournals(wb);
+        console.log('[Journals] entries:',journalData.entries.length,'clients:',journalData.map.size);
+        setStatus('sj',`✓ ${file.name} — ${journalData.entries.length} journal entries`,true);
+        document.getElementById('card-jnl').classList.add('loaded');
+      }
+      checkReady();
+    }catch(err){ toast('Error: '+err.message,true); console.error(err); }
+  };
+  r.readAsArrayBuffer(file);
+}
+function setStatus(id,msg,ok){
+  const el=document.getElementById(id);
+  el.className='file-status'+(ok?' ok':'');
+  el.innerHTML=`<span class="status-dot"></span><span>${msg}</span>`;
+}
+function checkReady(){
+  const ok=commData&&recData;
+  document.getElementById('btn-next').disabled=!ok;
+  const jnlNote=journalData?` + journals loaded`:'';
+  document.getElementById('upload-hint').textContent=ok
+    ?`Sources 01 & 02 loaded${jnlNote} — ready to proceed`
+    :'Load Sources 01 & 02 to continue (Source 03 optional)';
+}
+
+// FUZZY MATCHING UTILITIES
+function normCode(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+
+// Strip common corporate suffixes so e.g. SILKWALLINVESTMENTS and SILKWALL both reduce to SILKWALL
+function normStrip(s){
+  let n=normCode(s);
+  const sfx=/(PRIVATE|PROPRIETARY|LIMITED|INCORPORATED|CORPORATION|INVESTMENTS|INVESTMENT|ENTERPRISES|ENTERPRISE|HOLDINGS|HOLDING|PROPERTIES|PROPERTY|SOLUTIONS|CONSULTING|CONSULTANTS|MANAGEMENT|MANAGERS|SERVICES|SERVICE|TRADING|TRADERS|ZIMBABWE|WEALTH|GROUP|LTD|PVT|INC|CORP|PTY|CO)$/;
+  n=n.replace(sfx,'').replace(sfx,'').replace(sfx,''); // three passes for long combos like WEALTHMANAGERS
+  return n;
+}
+
+// Generate name variants to try: full name, without title, surname only.
+// Critical for individuals stored as "Ms ELLEN SELEMANI" in commission
+// but as "SELEMANIE" (surname only, possible typo) in the journal.
+// Surname-only variant is skipped for generic institutional words (SCHOOL, COUNCIL, etc.)
+// to prevent e.g. "INKOMO GARRISON PRIMARY SCHOOL" last-word "SCHOOL" matching "NORTHWESTSCHOOL".
+const GENERIC_WORDS=/^(SCHOOL|COLLEGE|UNIVERSITY|COUNCIL|ASSEMBLY|CHURCH|COMPANY|AGENCY|INSTITUTE|HOSPITAL|CLINIC|CENTRE|CENTER|FOUNDATION|TRUST|FUND|BANK|COURT|HOTEL|LODGE|CLUB|SOCIETY|ASSOCIATION|MINISTRY|DEPARTMENT|OFFICE|AUTHORITY|BOARD|COMMISSION|COMMITTEE|BUREAU|CHAMBER|DISTRICT|PRIMARY|SECONDARY|GARRISON|VILLAGE|TOWN|CITY|PROVINCE|ZIMBABWE)$/i;
+function nameVariants(raw){
+  const words=String(raw||'').trim().split(/\s+/);
+  const variants=[raw];
+  const noTitle=words.filter(w=>!/^(MS|MR|MRS|DR|PROF|REV|HON)\.?$/i.test(w)).join(' ');
+  if(noTitle!==raw)variants.push(noTitle);
+  const last=words[words.length-1];
+  if(words.length>1&&last.length>=3&&!GENERIC_WORDS.test(last))variants.push(last); // surname only (min 3 chars — avoids initials like "G" from "MAPONGA G")
+  return variants;
+}
+
+function jaroWinkler(s1,s2){
+  if(s1===s2)return 1;
+  const l1=s1.length,l2=s2.length;
+  if(!l1||!l2)return 0;
+  const md=Math.floor(Math.max(l1,l2)/2)-1;
+  const m1=new Array(l1).fill(false),m2=new Array(l2).fill(false);
+  let matches=0;
+  for(let i=0;i<l1;i++){
+    const lo=Math.max(0,i-md),hi=Math.min(i+md,l2-1);
+    for(let j=lo;j<=hi;j++){ if(m2[j]||s1[i]!==s2[j])continue; m1[i]=m2[j]=true; matches++; break; }
+  }
+  if(!matches)return 0;
+  let t=0,k=0;
+  for(let i=0;i<l1;i++){ if(!m1[i])continue; while(!m2[k])k++; if(s1[i]!==s2[k])t++; k++; }
+  const jaro=(matches/l1+matches/l2+(matches-t/2)/matches)/3;
+  let p=0; for(let i=0;i<Math.min(4,l1,l2);i++){ if(s1[i]===s2[i])p++; else break; }
+  return jaro+p*0.1*(1-jaro);
+}
+
+// Try each candidate string (insured first, then agent) against the journal map.
+// Each candidate expands into variants (full, no-title, surname-only) and each variant
+// goes through 3 tiers: stripped-exact → substring → Jaro-Winkler (threshold 0.85).
+function matchToJournal(candidates,journalMap){
+  const keys=[...journalMap.keys()];
+  for(const raw of candidates){
+    for(const variant of nameVariants(raw)){
+      const na=normCode(variant),ns=normStrip(variant);
+      if(!na)continue;
+      // Tier 1: exact match on full or suffix-stripped codes
+      for(const k of keys){
+        const ks=normStrip(k);
+        if(na===k||ns===ks||ns===k||na===ks)return k;
+      }
+      // Tier 2: substring containment — pick the highest JW-scoring match among all candidates
+      // Guards: skip if na<3 chars (avoids single-letter false hits); only use ns if non-empty
+      if(na.length>=3){
+        let t2best=null,t2score=0;
+        for(const k of keys){
+          const ks=normStrip(k);
+          const naHit=na.includes(k)||k.includes(na);
+          const nsHit=ns.length>0&&ks.length>0&&(ns.includes(ks)||ks.includes(ns));
+          if(naHit||nsHit){
+            const sc=Math.max(jaroWinkler(na,k),ns.length>0?jaroWinkler(ns,ks):0);
+            if(sc>t2score){t2score=sc;t2best=k;}
+          }
+        }
+        if(t2best)return t2best;
+      }
+      // Tier 3: Jaro-Winkler — best of full/stripped vs full/stripped comparisons
+      let best=null,bestScore=0;
+      for(const k of keys){
+        const ks=normStrip(k);
+        // Compare all combinations: full↔full, stripped↔stripped, stripped↔full
+        const sc=Math.max(jaroWinkler(na,k),jaroWinkler(ns,ks),jaroWinkler(ns,k),jaroWinkler(na,ks));
+        if(sc>bestScore){bestScore=sc;best=k;}
+      }
+      if(bestScore>=0.85)return best;
+    }
+  }
+  return null;
+}
+
+// Find top-N candidate journal entries for a single unmatched invoice.
+// Scores each journal client by name similarity (60%) + amount closeness (40%).
+// Used to populate the "Possible Matches" sheet for manual accountant review.
+function findCandidates(inv,jmap,topN=3){
+  if(!jmap)return[];
+  const keys=[...jmap.keys()];
+  const insNa=normCode(inv.insured),insNs=normStrip(inv.insured);
+  const agNa=normCode(inv.agent);
+  const gp=Math.abs(inv.gross_premium);
+  // surname variant — last word ≥3 chars and not a generic word
+  const insWords=String(inv.insured||'').trim().split(/\s+/);
+  const insLast=insWords[insWords.length-1]||'';
+  const insLastNa=(insLast.length>=3&&!GENERIC_WORDS.test(insLast))?normCode(insLast):'';
+
+  const scored=[];
+  for(const k of keys){
+    const ks=normStrip(k);
+    const nameSc=Math.max(
+      jaroWinkler(insNa,k),jaroWinkler(insNs,ks),
+      jaroWinkler(insNs,k),jaroWinkler(insNa,ks),
+      jaroWinkler(agNa,k),jaroWinkler(agNa,ks),
+      insLastNa?Math.max(jaroWinkler(insLastNa,k),jaroWinkler(insLastNa,ks)):0
+    );
+    if(nameSc<0.45)continue; // skip very poor name matches
+    for(const e of jmap.get(k)){
+      const amtDiff=gp>0?Math.abs(e.amount-gp)/gp:1;
+      const combined=nameSc*0.6+Math.max(0,1-amtDiff)*0.4;
+      scored.push({client:e.client,jn_ref:e.jn_ref,amount:e.amount,nameSc,amtDiff,combined});
+    }
+  }
+  scored.sort((a,b)=>b.combined-a.combined);
+  // deduplicate by JN+client — keep best score per pair
+  const seen=new Set(),out=[];
+  for(const c of scored){
+    const key=c.jn_ref+'|'+c.client;
+    if(!seen.has(key)){seen.add(key);out.push(c);}
+    if(out.length>=topN)break;
+  }
+  return out;
+}
+
+// PARSE JOURNALS
+function parseJournals(wb){
+  const entries=[];
+  for(const sh of wb.SheetNames){
+    const ws=wb.Sheets[sh];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,cellDates:true,defval:null});
+    let lastJN=null;
+    for(let i=2;i<rows.length;i++){ // skip row 0 (title) and row 1 (headers)
+      const row=rows[i]; if(!row)continue;
+      const ref=row[0]!=null?String(row[0]).trim():'';
+      const client=row[2]!=null?String(row[2]).trim():'';
+      const amt=tn(row[3]); // Insurer/Comm amount column
+      const media=row[11]!=null?String(row[11]).trim():'';
+      const dt=row[1] instanceof Date?fd(row[1]):(row[1]?String(row[1]):'');
+      if(ref.startsWith('JN'))lastJN=ref;
+      const jn=ref.startsWith('JN')?ref:lastJN;
+      if(jn&&client&&amt!==0){
+        entries.push({jn_ref:jn,date:dt,client,client_norm:normCode(client),amount:Math.abs(amt),media});
+      }
+    }
+  }
+  // Build map keyed by normalised client code
+  const map=new Map();
+  for(const e of entries){
+    if(!map.has(e.client_norm))map.set(e.client_norm,[]);
+    map.get(e.client_norm).push(e);
+  }
+  // Build secondary map keyed by JN ref for direct lookup
+  const jnMap=new Map();
+  for(const e of entries){
+    if(!jnMap.has(e.jn_ref))jnMap.set(e.jn_ref,[]);
+    jnMap.get(e.jn_ref).push(e);
+  }
+  return{entries,map,jnMap};
+}
+
+// PARSE COMMISSION
+function parseComm(wb){
+  const inv=[];
+  for(const sh of wb.SheetNames){
+    const ws=wb.Sheets[sh];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,cellDates:true,defval:null});
+    let agent=null;
+    for(const row of rows){
+      if(!row||row.length<2)continue;
+      const c0=row[0],c1=row[1],c2=row[2],c3=row[3];
+      if(typeof c1==='string'&&c1.includes('STATEMENT OF ACCOUNT')&&typeof c2==='string'&&c2.includes('A/C CODE')){
+        agent=c3!=null?String(c3).trim():''; continue;
+      }
+      if(c0 instanceof Date&&!isNaN(c0)&&typeof c1==='string'&&c1.includes('Invoice')){
+        inv.push({
+          agent:agent||'',trans_date:fd(c0),trans_type:c1.trim(),
+          trans_ref:c2!=null?String(c2).trim():'',
+          policy_number:row[3]!=null?String(row[3]).trim():'',
+          insured:row[4]!=null?String(row[4]).trim():'',
+          gross_premium:tn(row[7]),comm_value:tn(row[8]),comm_percent:tn(row[9]),
+        });
+      }
+    }
+  }
+  // Deduplicate: same policy + same transaction ref = exact duplicate row; keep first occurrence.
+  const seen=new Set();
+  return inv.filter(r=>{
+    const key=r.policy_number+'|'+r.trans_ref;
+    if(!r.policy_number||seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// PARSE RECEIPTS
+function parseRec(wb){
+  const map=new Map();
+  for(const sh of wb.SheetNames){
+    const ws=wb.Sheets[sh];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,cellDates:true,defval:null});
+    for(let i=1;i<rows.length;i++){
+      const row=rows[i];
+      if(!row||row.length<3)continue;
+      const doc=row[1]!=null?String(row[1]).trim():'';
+      const pol=row[2]!=null?String(row[2]).trim():'';
+      const dt=row[3] instanceof Date?fd(row[3]):(row[3]?String(row[3]):'');
+      const media=row[4]!=null?String(row[4]).trim():'';
+      const amt=tn(row[6]);
+      if(pol&&doc&&!map.has(pol)) map.set(pol,{doc_ref:doc,date:dt,media_type:media,amount:amt});
+    }
+  }
+  return map;
+}
+
+// CLASSIFY GRID
+function buildGrid(){
+  const byAgent={};
+  for(const inv of commData){ if(!byAgent[inv.agent])byAgent[inv.agent]=0; byAgent[inv.agent]+=Math.abs(inv.comm_value); }
+  const agents=Object.keys(byAgent).sort();
+  const grid=document.getElementById('cgrid'); grid.innerHTML='';
+  for(const ag of agents){
+    if(!agentTypes[ag])agentTypes[ag]='individual';
+    const t=agentTypes[ag];
+    const div=document.createElement('div');
+    div.className=`agent-card ${t}`; div.id='ac_'+btoa(ag).replace(/=/g,'');
+    div.innerHTML=`
+      <div><div class="agent-name">${esc(ag)}</div><div class="agent-comm">Comm: $${byAgent[ag].toFixed(2)}</div></div>
+      <div class="toggle-wrap">
+        <div class="toggle-opt ${t==='individual'?'sel-ind':''}" onclick="setType(this,'${esc(ag)}','individual')">Indiv</div>
+        <div class="toggle-opt ${t==='corporate'?'sel-corp':''}" onclick="setType(this,'${esc(ag)}','corporate')">Corp</div>
+      </div>`;
+    grid.appendChild(div);
+  }
+}
+function setType(el,agent,type){
+  agentTypes[agent]=type;
+  const card=el.closest('.agent-card');
+  card.className=`agent-card ${type}`;
+  card.querySelectorAll('.toggle-opt').forEach(o=>o.className='toggle-opt');
+  el.className=`toggle-opt ${type==='individual'?'sel-ind':'sel-corp'}`;
+}
+function setAll(type){ Object.keys(agentTypes).forEach(a=>agentTypes[a]=type); buildGrid(); }
+
+// RECONCILE
+function runRecon(){
+  const wht=parseFloat(document.getElementById('cfg-wht').value)/100;
+  const vat=parseFloat(document.getElementById('cfg-vat').value)/100;
+  const TM=new Set(['int elec fund trf','direct debit','ecocash']);
+
+  // Pass 1: receipt matching
+  results=commData.map(inv=>{
+    const rec=recData.get(inv.policy_number);
+    const media=rec?rec.media_type:'';
+    const isTr=TM.has(media.toLowerCase());
+    const type=agentTypes[inv.agent]||'individual';
+    const ca=Math.abs(inv.comm_value);
+    let whtA=0,vatA=0,net=ca;
+    if(rec&&type==='corporate'){ whtA=ca*wht; vatA=ca*vat; net=ca-whtA+vatA; }
+    const settleAmt=rec?rec.amount:null;
+    const variance=settleAmt!=null?settleAmt-inv.gross_premium:null;
+    return{...inv,payable:!!rec,match_type:rec?'Receipt':'',agent_type:type,
+      receipt_ref:rec?rec.doc_ref:'',receipt_date:rec?rec.date:'',receipt_media:media,
+      settle_amount:settleAmt,variance,
+      is_transfer:isTr,comm_abs:ca,wht_amt:whtA,vat_amt:vatA,net_due:net};
+  });
+
+  // Pass 2: journal matching for unmatched invoices
+  if(journalData){
+    const usedJN=new Set();
+    const jmap=journalData.map;
+
+    // Pass 2a: direct JN ref match — commission file already carries the JN ref for Transfer entries.
+    // Group invoices sharing the same JN ref and match the journal by total GP (handles 1 journal = N invoices).
+    const jnRefGroups=new Map();
+    for(const r of results){
+      if(r.payable||!r.jn_ref)continue;
+      if(!jnRefGroups.has(r.jn_ref))jnRefGroups.set(r.jn_ref,[]);
+      jnRefGroups.get(r.jn_ref).push(r);
+    }
+    for(const [jnRef,rows] of jnRefGroups){
+      const totalGP=rows.reduce((s,r)=>s+Math.abs(r.gross_premium),0);
+      const candidates=(journalData.jnMap.get(jnRef)||[])
+        .filter(e=>!usedJN.has(e.jn_ref+'|'+e.amount))
+        .sort((a,b)=>b.jn_ref.localeCompare(a.jn_ref));
+      // Accept if journal amount matches total within 15% (or just take closest if exact JN ref)
+      let match=candidates.find(e=>totalGP>0&&Math.abs(e.amount-totalGP)/totalGP<0.05);
+      if(!match)match=candidates.find(e=>totalGP>0&&Math.abs(e.amount-totalGP)/totalGP<0.15);
+      if(!match&&candidates.length)match=candidates[0]; // exact JN ref — trust it regardless of amount
+      if(!match)continue;
+      usedJN.add(match.jn_ref+'|'+match.amount);
+      for(const r of rows){
+        const gp=Math.abs(r.gross_premium);
+        const share=totalGP>0?gp/totalGP:1/rows.length;
+        const settleAmt=+(match.amount*share).toFixed(2);
+        const ca=Math.abs(r.comm_value),type=r.agent_type;
+        let whtA=0,vatA=0,net=ca;
+        if(type==='corporate'){whtA=ca*wht;vatA=ca*vat;net=ca-whtA+vatA;}
+        r.payable=true;r.match_type='Journal';
+        r.receipt_ref=match.jn_ref;r.receipt_date=match.date;
+        r.receipt_media=match.media||'Journal';
+        r.settle_amount=settleAmt;r.variance=+(settleAmt-gp).toFixed(2);
+        r.is_transfer=false;r.comm_abs=ca;r.wht_amt=whtA;r.vat_amt=vatA;r.net_due=net;
+      }
+    }
+
+    // Pass 2b: fuzzy name matching for invoices without a JN ref in the commission file
+    for(const r of results){
+      if(r.payable)continue;
+      const clientKey=matchToJournal([r.insured,r.agent],jmap);
+      if(!clientKey)continue;
+      // Sort descending by JN ref so the latest correction is always preferred over the original entry
+      const candidates=jmap.get(clientKey)
+        .filter(e=>!usedJN.has(e.jn_ref+'|'+e.amount))
+        .sort((a,b)=>b.jn_ref.localeCompare(a.jn_ref));
+      // Try exact amount match first (within 5%)
+      const gp=Math.abs(r.gross_premium);
+      let match=candidates.find(e=>gp>0&&Math.abs(e.amount-gp)/gp<0.05);
+      if(!match) match=candidates.find(e=>gp>0&&Math.abs(e.amount-gp)/gp<0.10);
+      if(!match) match=candidates.find(e=>gp>0&&Math.abs(e.amount-gp)/gp<0.15);
+      if(match){
+        usedJN.add(match.jn_ref+'|'+match.amount);
+        const ca=Math.abs(r.comm_value);
+        const type=r.agent_type;
+        let whtA=0,vatA=0,net=ca;
+        if(type==='corporate'){ whtA=ca*wht; vatA=ca*vat; net=ca-whtA+vatA; }
+        const variance=match.amount-Math.abs(r.gross_premium);
+        r.payable=true; r.match_type='Journal';
+        r.receipt_ref=match.jn_ref; r.receipt_date=match.date;
+        r.receipt_media=match.media||'Journal';
+        r.settle_amount=match.amount; r.variance=variance;
+        r.is_transfer=false; r.comm_abs=ca; r.wht_amt=whtA; r.vat_amt=vatA; r.net_due=net;
+      }
+    }
+
+    // Pass 2c: grouped fuzzy matching — one journal covers the sum of multiple invoices (no JN ref in commission)
+    // e.g. SMARTVEST has 2 policies paid under a single JN for the combined total
+    const grpMap=new Map();
+    for(const r of results){
+      if(r.payable)continue;
+      const clientKey=matchToJournal([r.insured,r.agent],jmap);
+      if(!clientKey)continue;
+      if(!grpMap.has(clientKey))grpMap.set(clientKey,{clientKey,rows:[]});
+      grpMap.get(clientKey).rows.push(r);
+    }
+    for(const {clientKey,rows} of grpMap.values()){
+      if(rows.length<2)continue; // single-invoice groups already tried in Pass 2
+      const totalGP=rows.reduce((s,r)=>s+Math.abs(r.gross_premium),0);
+      const candidates=jmap.get(clientKey)
+        .filter(e=>!usedJN.has(e.jn_ref+'|'+e.amount))
+        .sort((a,b)=>b.jn_ref.localeCompare(a.jn_ref));
+      let match=candidates.find(e=>totalGP>0&&Math.abs(e.amount-totalGP)/totalGP<0.05);
+      if(!match)match=candidates.find(e=>totalGP>0&&Math.abs(e.amount-totalGP)/totalGP<0.20);
+      if(!match)continue;
+      usedJN.add(match.jn_ref+'|'+match.amount);
+      for(const r of rows){
+        const gp=Math.abs(r.gross_premium);
+        const share=totalGP>0?gp/totalGP:1/rows.length;
+        const settleAmt=+(match.amount*share).toFixed(2);
+        const ca=Math.abs(r.comm_value);
+        const type=r.agent_type;
+        let whtA=0,vatA=0,net=ca;
+        if(type==='corporate'){whtA=ca*wht;vatA=ca*vat;net=ca-whtA+vatA;}
+        r.payable=true; r.match_type='Journal';
+        r.receipt_ref=match.jn_ref; r.receipt_date=match.date;
+        r.receipt_media=match.media||'Journal';
+        r.settle_amount=settleAmt; r.variance=+(settleAmt-gp).toFixed(2);
+        r.is_transfer=false; r.comm_abs=ca; r.wht_amt=whtA; r.vat_amt=vatA; r.net_due=net;
+      }
+    }
+  }
+
+  const recCt=results.filter(r=>r.match_type==='Receipt').length;
+  const jnlCt=results.filter(r=>r.match_type==='Journal').length;
+  const unmCt=results.filter(r=>!r.payable).length;
+  console.log('[Recon] total:',results.length,'receipt:',recCt,'journal:',jnlCt,'unmatched:',unmCt);
+  updateStats(); renderTable(); goTo(3);
+  setTimeout(()=>document.getElementById('sbar').classList.add('visible'),50);
+  toast(`Done — ${recCt} receipt, ${jnlCt} journal, ${unmCt} unmatched`);
+}
+
+// STATS
+function updateStats(){
+  const recRows=results.filter(r=>r.match_type==='Receipt');
+  const jnlRows=results.filter(r=>r.match_type==='Journal');
+  const pay=results.filter(r=>r.payable);
+  const nop=results.filter(r=>!r.payable);
+  const ags=new Set(results.map(r=>r.agent)).size;
+  const cp=pay.reduce((s,r)=>s+r.comm_abs,0), cw=nop.reduce((s,r)=>s+r.comm_abs,0);
+  const tot=results.length;
+  document.getElementById('sv-tot').textContent=tot;
+  document.getElementById('sv-ag').textContent=ags+' agents';
+  document.getElementById('sv-pay').textContent=recRows.length;
+  document.getElementById('sv-pp').textContent=tot?Math.round(recRows.length/tot*100)+'% of invoices':'';
+  document.getElementById('sv-jnl').textContent=jnlRows.length;
+  document.getElementById('sv-jp').textContent=tot?Math.round(jnlRows.length/tot*100)+'% of invoices':'';
+  document.getElementById('sv-not').textContent=nop.length;
+  document.getElementById('sv-np').textContent=tot?Math.round(nop.length/tot*100)+'% unmatched':'';
+  document.getElementById('sv-amt').textContent=currency+' '+cp.toFixed(2);
+  document.getElementById('sv-wh').textContent='Withheld: '+currency+' '+cw.toFixed(2);
+  document.getElementById('tc-p').textContent=pay.length;
+  document.getElementById('tc-w').textContent=nop.length;
+  document.getElementById('tc-a').textContent=results.length;
+}
+
+// VARIANCE HELPERS
+function varClass(v){
+  if(v===null)return'var-none';
+  if(v===0)return'var-exact';
+  if(Math.abs(v)<=1)return'var-round';
+  if(v>1)return'var-over';
+  return'var-under';
+}
+function varLabel(v){
+  if(v===null)return'—';
+  if(v===0)return'Exact';
+  const sign=v>0?'+':'';
+  return sign+v.toFixed(2);
+}
+// Sort payable rows: underpaid first → rounding → overpaid → exact
+function varSortKey(r){
+  const v=r.variance;
+  if(v===null)return 99;
+  if(v<-1)return 0;       // underpaid — most urgent
+  if(Math.abs(v)<=1&&v!==0)return 1; // rounding
+  if(v>1)return 2;        // overpaid
+  return 3;               // exact
+}
+
+// TABLE
+function getFiltered(){
+  let r=results;
+  if(curTab==='payable'){ r=r.filter(x=>x.payable); r=[...r].sort((a,b)=>varSortKey(a)-varSortKey(b)); }
+  if(curTab==='withheld') r=r.filter(x=>!x.payable);
+  if(curSearch){ const q=curSearch.toLowerCase(); r=r.filter(x=>x.policy_number.toLowerCase().includes(q)||x.insured.toLowerCase().includes(q)||x.agent.toLowerCase().includes(q)||x.trans_ref.toLowerCase().includes(q)); }
+  return r;
+}
+function renderTable(){
+  const rows=getFiltered(), tb=document.getElementById('tbody');
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="16"><div class="empty-state"><p>No records match</p></div></td></tr>`; return; }
+  tb.innerHTML=rows.map(r=>{
+    const vc=varClass(r.variance), vl=varLabel(r.variance);
+    const matchBadge=r.match_type==='Receipt'
+      ?`<span class="badge bg" style="font-size:9px;padding:2px 6px">R</span>`
+      :r.match_type==='Journal'
+        ?`<span class="badge badge-j" style="font-size:9px;padding:2px 6px">J</span>`
+        :`<span class="badge br" style="font-size:9px;padding:2px 6px">—</span>`;
+    return`<tr>
+    <td><span class="badge ${r.payable?'bg':'br'}"><span class="badge-dot"></span>${r.payable?'Payable':'Withheld'}</span></td>
+    <td><span class="${r.agent_type==='corporate'?'ap':'ac'}" style="font-size:10px;font-family:var(--mono)">${r.agent_type==='corporate'?'CORP':'INDIV'}</span></td>
+    <td><span class="agent-pill">${esc(r.agent)}</span></td>
+    <td>${esc(r.policy_number)}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${esc(r.insured)}</td>
+    <td>${esc(r.trans_type)}</td><td>${esc(r.trans_date)}</td>
+    <td class="num">${r.gross_premium.toFixed(2)}</td>
+    <td class="num">${r.comm_value.toFixed(2)}</td>
+    <td class="num">${r.comm_percent?r.comm_percent.toFixed(1)+'%':'—'}</td>
+    <td>${r.receipt_ref||'<span style="color:var(--muted)">—</span>'}</td>
+    <td>${r.receipt_date||'<span style="color:var(--muted)">—</span>'}</td>
+    <td>${r.receipt_media?`<span class="bm">${esc(r.receipt_media)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+    <td class="num">${r.settle_amount!=null?r.settle_amount.toFixed(2):'<span style="color:var(--muted)">—</span>'}</td>
+    <td class="num"><span class="var-cell ${vc}">${vl}</span></td>
+    <td>${matchBadge}</td>
+  </tr>`;
+  }).join('');
+}
+function switchTab(t){ curTab=t; document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['payable','withheld','all'][i]===t)); renderTable(); }
+function filterTable(){ curSearch=document.getElementById('sbox').value; renderTable(); }
+
+// EXPORT
+function exportExcel(){
+  if(!results.length){ toast('No data to export',true); return; }
+  const wht=parseFloat(document.getElementById('cfg-wht').value)/100;
+  const vat=parseFloat(document.getElementById('cfg-vat').value)/100;
+  const wb=XLSX.utils.book_new();
+  const today=new Date().toISOString().slice(0,10);
+
+  const hdrs=['Status','Match Type','Agent Type','Agent','Policy Number','Insured','Trans Type','Trans Date','Trans Ref','Gross Premium','Comm Value','Comm %','Settlement Ref','Settlement Date','Media Type','Settled Amount','Variance'];
+  const toRow=r=>[
+    r.payable?'PAYABLE':'WITHHELD',
+    r.match_type||'Unmatched',
+    r.agent_type.toUpperCase(),
+    r.agent,r.policy_number,r.insured,r.trans_type,r.trans_date,r.trans_ref,
+    r.gross_premium,r.comm_value,r.comm_percent,
+    r.receipt_ref,r.receipt_date,r.receipt_media,
+    r.settle_amount!=null?r.settle_amount:'',
+    r.variance!=null?r.variance:''
+  ];
+
+  addSh(wb,'All Records',[hdrs,...results.map(toRow)]);
+  addSh(wb,'Payable',[hdrs,...results.filter(r=>r.payable).map(toRow)]);
+  addSh(wb,'Withheld',[hdrs,...results.filter(r=>!r.payable).map(toRow)]);
+  addSh(wb,'Transfer Summary',buildSummary(results.filter(r=>r.payable&&r.is_transfer),`${currency} TRANSFER COMMISSIONS`,wht,vat,today));
+  addSh(wb,'Cash Summary',buildSummary(results.filter(r=>r.payable&&!r.is_transfer),`${currency} CASH COMMISSIONS`,wht,vat,today));
+  addSh(wb,'Agent Summary',buildAgentSummary());
+
+  if(journalData){
+    const unm=results.filter(r=>!r.payable);
+    const pmHdrs=[
+      'Policy Number','Insured','Agent','Gross Premium',
+      'Cand 1 — Journal Client','Cand 1 — JN Ref','Cand 1 — Jnl Amount','Cand 1 — $ Diff','Cand 1 — Name %','Cand 1 — Confidence',
+      'Cand 2 — Journal Client','Cand 2 — JN Ref','Cand 2 — Jnl Amount','Cand 2 — $ Diff','Cand 2 — Name %','Cand 2 — Confidence',
+      'Cand 3 — Journal Client','Cand 3 — JN Ref','Cand 3 — Jnl Amount','Cand 3 — $ Diff','Cand 3 — Name %','Cand 3 — Confidence',
+      'Accountant Notes'
+    ];
+    const confLabel=sc=>sc>=0.85?'Strong':sc>=0.70?'Likely':sc>=0.55?'Possible':'Weak';
+    const pmData=unm.map(inv=>{
+      const cands=findCandidates(inv,journalData.map);
+      const row=[inv.policy_number,inv.insured,inv.agent,inv.gross_premium];
+      for(let i=0;i<3;i++){
+        const c=cands[i];
+        if(c){
+          const dollarDiff=+(c.amount-Math.abs(inv.gross_premium)).toFixed(2);
+          row.push(c.client,c.jn_ref,c.amount,dollarDiff,
+            Math.round(c.nameSc*100)+'%',confLabel(c.combined));
+        }else{
+          row.push('','','','','','');
+        }
+      }
+      row.push('');
+      return row;
+    });
+    addSh(wb,'Possible Matches',[pmHdrs,...pmData]);
+  }
+
+  XLSX.writeFile(wb,`Commission_Reconciliation_${currency}_${today}.xlsx`);
+  toast('Exported — 7 sheets including Transfer, Cash summaries and Possible Matches');
+}
+
+function buildSummary(rows,title,wht,vat,today){
+  const d=[];
+  // Get period from data
+  const dates=rows.map(r=>r.trans_date).filter(Boolean).sort();
+  const period=dates.length?`AGENT COMMISSIONS FROM ${dates[0]} TO ${dates[dates.length-1]}`:'';
+  d.push([title]);
+  d.push([period]);
+  d.push([]);
+
+  // Individuals
+  const indivs=rows.filter(r=>r.agent_type==='individual');
+  if(indivs.length){
+    d.push([`${currency} INDIVIDUAL AGENT COMMISSION`]);
+    d.push(['AGENT CODE','COMMISSION EARNED','AMOUNT','HR TAX','NET AMOUNT DUE']);
+    const byAg=grpByAgent(indivs); let tC=0,tN=0;
+    for(const [ag,comm] of Object.entries(byAg)){
+      d.push([ag,comm.toFixed(2),comm.toFixed(2),'',comm.toFixed(2)]);
+      tC+=comm; tN+=comm;
+    }
+    d.push(['','',tC.toFixed(2),'',tN.toFixed(2)]);
+    d.push([]);
+  }
+
+  // Corporates
+  const corps=rows.filter(r=>r.agent_type==='corporate');
+  if(corps.length){
+    d.push([`${currency} CORPORATE AGENT COMMISSION`]);
+    d.push(['AGENT CODE','COMMISSION EARNED','AMOUNT',`Withholding Tax @${(wht*100).toFixed(0)}%`,`VAT @${(vat*100).toFixed(0)}%`,'NET AMOUNT DUE']);
+    const byAg=grpByAgent(corps); let tC=0,tW=0,tV=0,tN=0;
+    for(const [ag,comm] of Object.entries(byAg)){
+      const w=comm*wht, v=comm*vat, n=comm-w+v;
+      d.push([ag,comm.toFixed(2),comm.toFixed(2),w.toFixed(2),v.toFixed(2),n.toFixed(2)]);
+      tC+=comm; tW+=w; tV+=v; tN+=n;
+    }
+    d.push(['','',tC.toFixed(2),tW.toFixed(2),tV.toFixed(2),tN.toFixed(2)]);
+    d.push([]);
+  }
+  d.push([`Generated: ${today}`]);
+  return d;
+}
+
+function buildAgentSummary(){
+  const hdrs=['Agent','Type','Total Invoices','Payable','Withheld','Comm Earned','WHT','VAT','Net Due'];
+  const agents=[...new Set(results.map(r=>r.agent))].sort();
+  const rows=agents.map(ag=>{
+    const ar=results.filter(r=>r.agent===ag), ap=ar.filter(r=>r.payable);
+    const ce=ap.reduce((s,r)=>s+r.comm_abs,0);
+    const wh=ap.reduce((s,r)=>s+r.wht_amt,0);
+    const va=ap.reduce((s,r)=>s+r.vat_amt,0);
+    const nd=ap.reduce((s,r)=>s+r.net_due,0);
+    return[ag,(agentTypes[ag]||'individual').toUpperCase(),ar.length,ap.length,ar.length-ap.length,ce.toFixed(2),wh.toFixed(2),va.toFixed(2),nd.toFixed(2)];
+  });
+  return[hdrs,...rows];
+}
+
+function grpByAgent(rows){ const o={}; for(const r of rows){ o[r.agent]=(o[r.agent]||0)+r.comm_abs; } return o; }
+function addSh(wb,name,data){ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name); }
+
+// DRAG DROP
+function dov(e,id){ e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+function dlv(id){ document.getElementById(id).classList.remove('dragover'); }
+function ddrop(e,type){ e.preventDefault(); const cardMap={comm:'card-comm',rec:'card-rec',journals:'card-jnl'}; dlv(cardMap[type]||type); const f=e.dataTransfer.files[0]; if(f)loadFile({target:{files:[f]}},type); }
+
+// HELPERS
+function fd(d){ return d instanceof Date&&!isNaN(d)?d.toISOString().slice(0,10):''; }
+function tn(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(err?' error':'');
+  setTimeout(()=>t.className='toast',3500);
+}
+</script>
+</body>
+</html>

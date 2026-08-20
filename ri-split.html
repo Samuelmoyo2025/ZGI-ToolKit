@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RI FAC/TTY Summary Tool — Zimnat</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864;
+    --navy-dark: #14284A;
+    --slate: #44546A;
+    --slate-light: #6b7a94;
+    --line: #D9DEE8;
+    --bg: #F4F6FA;
+    --panel: #FFFFFF;
+    --amber: #B8860B;
+    --amber-bg: #FFF7E6;
+    --green: #1E7145;
+    --green-bg: #EAF7EF;
+    --red: #B3261E;
+    --red-bg: #FBEAEA;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: var(--bg);
+    color: #1B2431;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 28px 32px;
+  }
+  header h1 {
+    margin: 0 0 4px 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header p {
+    margin: 0;
+    font-size: 13px;
+    color: #C7D2E6;
+  }
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .card h2 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .card .hint {
+    font-size: 12px;
+    color: var(--slate-light);
+    margin: 0 0 14px 0;
+  }
+  .dropzone {
+    border: 1.5px dashed var(--line);
+    border-radius: 6px;
+    padding: 22px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: #FAFBFD;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--navy);
+    background: #EEF2F9;
+  }
+  .dropzone input { display: none; }
+  .dropzone .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .dropzone .sub {
+    font-size: 11px;
+    color: var(--slate-light);
+    margin-top: 4px;
+  }
+  .filename {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--slate);
+    background: #EEF2F9;
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: none;
+  }
+  .filename.show { display: block; }
+  .actions {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  button.primary {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+  }
+  button.primary:hover { background: var(--navy-dark); }
+  button.primary:disabled {
+    background: #A7B3C6;
+    cursor: not-allowed;
+  }
+  button.secondary {
+    background: #fff;
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button.secondary:hover { background: #EEF2F9; }
+  #status {
+    font-size: 12.5px;
+    color: var(--slate);
+  }
+  #status.error { color: var(--red); font-weight: 600; }
+
+  .results {
+    margin-top: 30px;
+    display: none;
+  }
+  .results.show { display: block; }
+  .results h2 {
+    font-size: 15px;
+    color: var(--navy);
+    margin: 0 0 12px 0;
+  }
+  table.recon {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12.5px;
+  }
+  table.recon th {
+    background: var(--navy);
+    color: #fff;
+    text-align: left;
+    padding: 9px 12px;
+    font-weight: 600;
+  }
+  table.recon td {
+    padding: 9px 12px;
+    border-top: 1px solid var(--line);
+  }
+  table.recon td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.ok td.status { color: var(--green); font-weight: 700; }
+  tr.warn td.status { color: var(--red); font-weight: 700; }
+
+  .unmapped-panel {
+    margin-top: 18px;
+    border: 1px solid var(--amber);
+    background: var(--amber-bg);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 12.5px;
+  }
+  .unmapped-panel h3 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: var(--amber);
+  }
+  .unmapped-panel table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+  }
+  .unmapped-panel th, .unmapped-panel td {
+    text-align: left;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .unmapped-panel td.num { text-align: right; }
+
+  .download-row {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--slate-light);
+    padding: 20px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #EEF2F9;
+    color: var(--navy);
+    margin-left: 8px;
+  }
+
+  /* ---------- Settings ---------- */
+  .gear-btn {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .gear-btn:hover { background: rgba(255,255,255,0.16); }
+  .count-badge {
+    background: #E8A33D;
+    color: #3A2600;
+    font-weight: 700;
+    font-size: 10.5px;
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-left: 4px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 28, 42, 0.55);
+    z-index: 100;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+    overflow-y: auto;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--panel);
+    border-radius: 10px;
+    max-width: 880px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-header h2 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--navy);
+  }
+  .modal-header .sub {
+    font-size: 12px;
+    color: var(--slate-light);
+    margin-top: 2px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--slate-light);
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .modal-close:hover { color: var(--navy); }
+  .modal-body {
+    padding: 20px 22px 22px;
+  }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .tab-btn {
+    background: #EEF2F9;
+    border: 1px solid var(--line);
+    color: var(--slate);
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+  .settings-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .settings-toolbar input[type="text"] {
+    flex: 1;
+    min-width: 160px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 12.5px;
+  }
+  .btn-sm {
+    background: #fff;
+    border: 1.5px solid var(--navy);
+    color: var(--navy);
+    padding: 7px 13px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-sm:hover { background: #EEF2F9; }
+  .btn-sm.danger {
+    border-color: #B3261E;
+    color: #B3261E;
+  }
+  .btn-sm.danger:hover { background: #FBEAEA; }
+
+  .mapping-table-wrap {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  table.mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.mapping-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--navy);
+    color: #fff;
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 600;
+    z-index: 1;
+  }
+  table.mapping-table td {
+    padding: 6px 10px;
+    border-top: 1px solid var(--line);
+  }
+  table.mapping-table tr.custom-row td { background: var(--amber-bg); }
+  table.mapping-table td.actions-cell {
+    white-space: nowrap;
+  }
+  .src-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 8px;
+  }
+  .src-tag.builtin { background: #EEF2F9; color: var(--navy); }
+  .src-tag.custom { background: #FCEBC5; color: #7A5200; }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--navy);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    margin-right: 10px;
+  }
+  .link-btn.danger { color: #B3261E; }
+
+  .add-form {
+    margin-top: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .add-form h3 {
+    font-size: 13px;
+    color: var(--navy);
+    margin: 0 0 10px 0;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 14px;
+  }
+  @media (max-width: 560px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
+  .form-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--slate);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .form-field input, .form-field select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .form-actions {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .form-msg {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .form-msg.error { color: #B3261E; }
+  .form-msg.ok { color: #1E7145; }
+
+  .modal-footer {
+    border-top: 1px solid var(--line);
+    padding: 14px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .modal-footer .hint-sm {
+    font-size: 11px;
+    color: var(--slate-light);
+    max-width: 340px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p style="margin:0 0 10px 0;font-size:12.5px;"><a href="index.html" style="color:#C7D2E6;text-decoration:none">&larr; Main Menu</a></p>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+    <div>
+      <h1>RI FAC/TTY Summary Tool</h1>
+      <p>Upload the SIRIUS reinsurer aging export(s) — get a FAC/TTY split summary for Payables and Receivables, USD and ZWG.</p>
+    </div>
+    <button id="settingsBtn" class="gear-btn" title="Account code mappings" aria-label="Settings">
+      &#9881; Settings <span class="count-badge" id="customCountBadge" style="display:none;"></span>
+    </button>
+  </div>
+</header>
+
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2>Account Code Mappings</h2>
+        <div class="sub">Every code the tool knows how to classify into Facultative or Treaty.</div>
+      </div>
+      <button class="modal-close" id="settingsCloseBtn" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" data-currency="USD" id="tabUSD">USD</button>
+        <button class="tab-btn" data-currency="ZWG" id="tabZWG">ZWG</button>
+      </div>
+
+      <div class="settings-toolbar">
+        <input type="text" id="mappingSearch" placeholder="Search by code or group…" />
+        <button class="btn-sm" id="resetCustomBtn">Reset custom mappings</button>
+      </div>
+
+      <div class="mapping-table-wrap">
+        <table class="mapping-table">
+          <thead>
+            <tr><th>A/C Code</th><th>Master Group</th><th>Type</th><th>Arrangement</th><th>Source</th><th></th></tr>
+          </thead>
+          <tbody id="mappingTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="add-form">
+        <h3 id="addFormTitle">Add a new account code</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="fCode">A/C Code (exact, as in the aging export)</label>
+            <input type="text" id="fCode" placeholder="e.g. NEWRE_QS" />
+          </div>
+          <div class="form-field">
+            <label for="fGroup">Master Group</label>
+            <input type="text" id="fGroup" list="groupList" placeholder="e.g. NEW REINSURER" />
+            <datalist id="groupList"></datalist>
+          </div>
+          <div class="form-field">
+            <label for="fType">Business Type</label>
+            <select id="fType">
+              <option value="FAC">Facultative (FAC)</option>
+              <option value="TTY">Treaty (TTY)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="fArrangement">Arrangement Column</label>
+            <select id="fArrangement"></select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="primary" id="saveMappingBtn" style="padding:9px 18px;font-size:13px;">Save mapping</button>
+          <button class="btn-sm" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+          <span class="form-msg" id="formMsg"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="hint-sm">Saved in this browser only. Export a backup before clearing browser data, or to share the updated mapping.</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" id="exportMappingsBtn">Export mappings (.json)</button>
+        <label class="btn-sm" style="display:inline-block;">
+          Import mappings
+          <input type="file" id="importMappingsInput" accept=".json" style="display:none;" />
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="gateOverlay">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-header">
+      <div>
+        <h2>Classification needed before continuing</h2>
+        <div class="sub" id="gateSubtitle"></div>
+      </div>
+      <button class="modal-close" id="gateCloseBtn" aria-label="Cancel">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="gateMessage" style="background:var(--amber-bg);border:1px solid #E8C468;border-radius:6px;padding:12px 14px;font-size:13px;margin-bottom:16px;"></div>
+      <datalist id="gateGroupListUSD"></datalist>
+      <datalist id="gateGroupListZWG"></datalist>
+      <div class="mapping-table-wrap" style="max-height:420px;">
+        <table class="mapping-table">
+          <thead>
+            <tr><th>Code</th><th>Name / Balance</th><th>Master Group</th><th>Type</th><th>Arrangement</th><th></th></tr>
+          </thead>
+          <tbody id="gateTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="hint-sm" id="gateProgress"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm danger" id="gateCancelBtn">Cancel</button>
+        <button class="primary" id="gateContinueBtn" style="padding:9px 18px;font-size:13px;" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="grid">
+    <div class="card">
+      <h2>USD Aging Export</h2>
+      <p class="hint">SIRIUS Insurer Age Analysis, base currency USD.</p>
+      <label class="dropzone" id="dropUSD">
+        <input type="file" id="fileUSD" accept=".xlsx" />
+        <div class="label">Click to choose file, or drag &amp; drop</div>
+        <div class="sub">.xlsx only</div>
+      </label>
+      <div class="filename" id="filenameUSD"></div>
+    </div>
+
+    <div class="card">
+      <h2>ZWG Aging Export</h2>
+      <p class="hint">SIRIUS Insurer Age Analysis, base currency ZWG.</p>
+      <label class="dropzone" id="dropZWG">
+        <input type="file" id="fileZWG" accept=".xlsx" />
+        <div class="label">Click to choose file, or drag &amp; drop</div>
+        <div class="sub">.xlsx only</div>
+      </label>
+      <div class="filename" id="filenameZWG"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="processBtn" disabled>Generate Summary</button>
+    <span id="status">Upload at least one file to begin.</span>
+  </div>
+
+  <div class="results" id="results">
+    <h2>Reconciliation Check</h2>
+    <table class="recon">
+      <thead>
+        <tr><th>Sheet</th><th style="text-align:right">Source Total</th><th style="text-align:right">FAC + TTY + Unclassified</th><th style="text-align:right">Difference</th><th>Status</th></tr>
+      </thead>
+      <tbody id="reconBody"></tbody>
+    </table>
+
+    <div id="unmappedContainer"></div>
+
+    <div class="download-row">
+      <button class="primary" id="downloadBtn">Download Summary Workbook</button>
+      <span id="downloadHint" style="font-size:12.5px;color:var(--slate-light);"></span>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Facultative and Treaty classifications are matched against an account-code lookup (122 USD codes, 116 ZWG codes built-in, plus anything you've added in Settings). If a new account code turns up in your upload, the tool stops and asks you to classify it before generating anything — nothing is built with unclassified accounts in it.
+</footer>
+
+<script>
+const LOOKUP = {
+  USD: {"AFC":{"group":"AFC","type":"FAC","arrangement":"Direct"},"AFC BRIGHT":{"group":"AFC","type":"FAC","arrangement":"Bright Re"},"AFC MINERVA":{"group":"AFC","type":"FAC","arrangement":"Minerva Re"},"ALL":{"group":"ALLIANCE","type":"FAC","arrangement":"Direct"},"BRIGHT RE":{"group":"BRIGHT RE","type":"FAC","arrangement":"Direct"},"OLD MUTUAL INSURANCE":{"group":"OLD MUTUAL","type":"FAC","arrangement":"Direct"},"BrightOM":{"group":"OLD MUTUAL","type":"FAC","arrangement":"Bright Re"},"Oldmutualcapitol":{"group":"OLD MUTUAL","type":"FAC","arrangement":"Capitol Re"},"CBZBRIGHT":{"group":"CBZ","type":"FAC","arrangement":"Bright Re"},"CREDIT":{"group":"CREDSURE","type":"FAC","arrangement":"Direct"},"CREDSURE/MINERVA":{"group":"CREDSURE","type":"FAC","arrangement":"Minerva Re"},"capitolcredsure":{"group":"CREDSURE","type":"FAC","arrangement":"Capitol Re"},"EMERITUS_Fac":{"group":"EMERITUS RE","type":"FAC","arrangement":"Direct"},"EMERITUS":{"group":"EMERITUS RE","type":"FAC","arrangement":"Direct"},"EMULIFE":{"group":"EMERITUS RE","type":"FAC","arrangement":"Direct"},"EMERITUS/ BRIGHT":{"group":"EMERITUS RE","type":"FAC","arrangement":"Bright Re"},"EMERITUS/MINERVA":{"group":"EMERITUS RE","type":"FAC","arrangement":"Minerva Re"},"EMERITUSCAPITOL":{"group":"EMERITUS RE","type":"FAC","arrangement":"Capitol Re"},"SKYEMERITUS":{"group":"EMERITUS RE","type":"FAC","arrangement":"SkyBridge"},"FBC RET FUND":{"group":"FBC RE","type":"FAC","arrangement":"Direct"},"FBC_Re_Fac":{"group":"FBC RE","type":"FAC","arrangement":"Direct"},"FBC RE/BRIGHT":{"group":"FBC RE","type":"FAC","arrangement":"Bright Re"},"FBC Re":{"group":"FBC RE","type":"FAC","arrangement":"Direct"},"FBC INSURANCE/BRIGHT":{"group":"FBC RE","type":"FAC","arrangement":"Bright Re"},"FBCRe/MINERVA":{"group":"FBC RE","type":"FAC","arrangement":"Minerva Re"},"FBCCAPITOL":{"group":"FBC RE","type":"FAC","arrangement":"Capitol Re"},"SKYFBC":{"group":"FBC RE","type":"FAC","arrangement":"SkyBridge"},"FIRST_FAC":{"group":"FM RE","type":"FAC","arrangement":"Direct"},"FIRST MUTUAL/ BRIGHT":{"group":"FM RE","type":"FAC","arrangement":"Bright Re"},"FIRSTRE/MINERVA":{"group":"FM RE","type":"FAC","arrangement":"Minerva Re"},"FMRECAPITOL":{"group":"FM RE","type":"FAC","arrangement":"Capitol Re"},"SKYFIRST":{"group":"FM RE","type":"FAC","arrangement":"SkyBridge"},"GRAND_FAC":{"group":"GRAND RE","type":"FAC","arrangement":"Direct"},"GrandreAgreed":{"group":"GRAND RE","type":"FAC","arrangement":"Agreed"},"GRANDRE/ BRIGHT":{"group":"GRAND RE","type":"FAC","arrangement":"Bright Re"},"GRANDRE/MINERVA":{"group":"GRAND RE","type":"FAC","arrangement":"Minerva Re"},"GRANDRECAPITOL":{"group":"GRAND RE","type":"FAC","arrangement":"Capitol Re"},"SKYGRAND":{"group":"GRAND RE","type":"FAC","arrangement":"SkyBridge"},"ICZ":{"group":"ICZ","type":"FAC","arrangement":"Direct"},"MINERVA RE FAC":{"group":"MINERVA RE","type":"FAC","arrangement":"Direct"},"minervaeconet":{"group":"MINERVA RE","type":"FAC","arrangement":"Econet"},"MUCA":{"group":"MUCA","type":"FAC","arrangement":"Direct"},"MINERVAMUCA":{"group":"MUCA","type":"FAC","arrangement":"Minerva Re"},"Nicoz/AonBenfield":{"group":"Nicoz/AonBenfield","type":"FAC","arrangement":"Minerva Re"},"RBI":{"group":"RBI","type":"FAC","arrangement":"Direct"},"SAF":{"group":"SAF","type":"FAC","arrangement":"Direct"},"SANTUARYINSURANCE":{"group":"SANTUARYINSURANCE","type":"FAC","arrangement":"Direct"},"SHA(SANTAM)":{"group":"SHA(SANTAM)","type":"FAC","arrangement":"Direct"},"TransAxis":{"group":"TRANSAXIS","type":"FAC","arrangement":"Direct"},"TransaxisBright":{"group":"TRANSAXIS","type":"FAC","arrangement":"Bright Re"},"TRANS MINERVA":{"group":"TRANSAXIS","type":"FAC","arrangement":"Minerva Re"},"SkyTrans":{"group":"TRANSAXIS","type":"FAC","arrangement":"SkyBridge"},"TRISTAR/MINERVA":{"group":"TRISTAR/MINERVA","type":"FAC","arrangement":"Minerva Re"},"TROPICALRE_FAC":{"group":"TROPICAL RE","type":"FAC","arrangement":"Direct"},"TROP":{"group":"TROPICAL RE","type":"FAC","arrangement":"Direct"},"TROPICAL RE/BRIGHT":{"group":"TROPICAL RE","type":"FAC","arrangement":"Bright Re"},"TROPICALlRE/MINERVA":{"group":"TROPICAL RE","type":"FAC","arrangement":"Minerva Re"},"TROPICALRE CAPITOL":{"group":"TROPICAL RE","type":"FAC","arrangement":"Capitol Re"},"SKYTROPICA":{"group":"TROPICAL RE","type":"FAC","arrangement":"SkyBridge"},"WAICA RE":{"group":"WAICA","type":"FAC","arrangement":"Direct"},"WAICA":{"group":"WAICA","type":"FAC","arrangement":"Direct"},"WAICARE":{"group":"WAICA","type":"FAC","arrangement":"Direct"},"WAICA RE/BRIGHT":{"group":"WAICA","type":"FAC","arrangement":"Bright Re"},"WAICA/ MINERVA":{"group":"WAICA","type":"FAC","arrangement":"Minerva Re"},"WAICA RE CAPITOL":{"group":"WAICA","type":"FAC","arrangement":"Capitol Re"},"SKYWAICA":{"group":"WAICA","type":"FAC","arrangement":"SkyBridge"},"W SAFE MINERVA":{"group":"W SAFE MINERVA","type":"FAC","arrangement":"Direct"},"ZB_RE":{"group":"ZB RE","type":"FAC","arrangement":"Direct"},"ZB_FAC":{"group":"ZB RE","type":"FAC","arrangement":"Direct"},"ZBRE_ACCESS FINANCE":{"group":"ZB RE","type":"FAC","arrangement":"Agreed"},"ZB RE/BRIGHT":{"group":"ZB RE","type":"FAC","arrangement":"Bright Re"},"ZBRE/MINERVA":{"group":"ZB RE","type":"FAC","arrangement":"Minerva Re"},"ZBCAPITOL":{"group":"ZB RE","type":"FAC","arrangement":"Capitol Re"},"SKYZB":{"group":"ZB RE","type":"FAC","arrangement":"SkyBridge"},"ZEP_FAC":{"group":"ZEP RE","type":"FAC","arrangement":"Direct"},"ZEP RE/ BRIGHT":{"group":"ZEP RE","type":"FAC","arrangement":"Bright Re"},"ZEP_MINERVA":{"group":"ZEP RE","type":"FAC","arrangement":"Minerva Re"},"SKYZEP":{"group":"ZEP RE","type":"FAC","arrangement":"SkyBridge"},"ZIMNAT LIFE":{"group":"ZIMNAT LIFE","type":"FAC","arrangement":"Direct"},"SKY":{"group":"SKY","type":"FAC","arrangement":"Direct"},"EMERITUS_QS":{"group":"EMERITUS RE","type":"TTY","arrangement":"QS"},"EMERITUSSURP":{"group":"EMERITUS RE","type":"TTY","arrangement":"Surplus"},"Emeritus_Auto":{"group":"EMERITUS RE","type":"TTY","arrangement":"Auto_Fac"},"EMERITUS_XOL":{"group":"EMERITUS RE","type":"TTY","arrangement":"XOL"},"FBCRE_XOL_3":{"group":"FBC RE","type":"TTY","arrangement":"XOL"},"FBC_QS":{"group":"FBC RE","type":"TTY","arrangement":"QS"},"FBCSURP":{"group":"FBC RE","type":"TTY","arrangement":"Surplus"},"FBC Re Auto":{"group":"FBC RE","type":"TTY","arrangement":"Auto_Fac"},"FBC_XOL":{"group":"FBC RE","type":"TTY","arrangement":"XOL"},"FMRESURP":{"group":"FM RE","type":"TTY","arrangement":"Surplus"},"FIRST_QS":{"group":"FM RE","type":"TTY","arrangement":"QS"},"FIRST SURPLUS":{"group":"FM RE","type":"TTY","arrangement":"Surplus"},"FIRST_AUTO":{"group":"FM RE","type":"TTY","arrangement":"Auto_Fac"},"FIRSTRE_XOL":{"group":"FM RE","type":"TTY","arrangement":"XOL"},"GRAND_QS":{"group":"GRAND RE","type":"TTY","arrangement":"QS"},"GRAND RE AUTO FAC 1":{"group":"GRAND RE","type":"TTY","arrangement":"Auto_Fac"},"GRANDRE QS":{"group":"GRAND RE","type":"TTY","arrangement":"QS"},"GRANDSURP":{"group":"GRAND RE","type":"TTY","arrangement":"Surplus"},"GRANDRE_AUTO":{"group":"GRAND RE","type":"TTY","arrangement":"Auto_Fac"},"GRANDRE_XOL":{"group":"GRAND RE","type":"TTY","arrangement":"XOL"},"MinervaRe Auto Fac 1":{"group":"MINERVA RE","type":"TTY","arrangement":"Auto_Fac"},"TRANSAXISSURP":{"group":"TRANSAXIS","type":"TTY","arrangement":"Surplus"},"TRANSAXISRE AUTO FAC":{"group":"TRANSAXIS","type":"TTY","arrangement":"Auto_Fac"},"TROPICALXL":{"group":"TROPICAL RE","type":"TTY","arrangement":"XOL"},"TROPICALQS":{"group":"TROPICAL RE","type":"TTY","arrangement":"QS"},"TROPICALSURP":{"group":"TROPICAL RE","type":"TTY","arrangement":"Surplus"},"TROPICALRE_AUTO":{"group":"TROPICAL RE","type":"TTY","arrangement":"Auto_Fac"},"TROPICAL XOL":{"group":"TROPICAL RE","type":"TTY","arrangement":"XOL"},"WAICAXL":{"group":"WAICA","type":"TTY","arrangement":"XOL"},"WAICAQS":{"group":"WAICA","type":"TTY","arrangement":"QS"},"WAICASURP":{"group":"WAICA","type":"TTY","arrangement":"Surplus"},"WAICA AUTOFAC":{"group":"WAICA","type":"TTY","arrangement":"Auto_Fac"},"WAICA XOL":{"group":"WAICA","type":"TTY","arrangement":"XOL"},"ZB_QS":{"group":"ZB RE","type":"TTY","arrangement":"QS"},"ZBRESURP":{"group":"ZB RE","type":"TTY","arrangement":"Surplus"},"ZB_AUTO":{"group":"ZB RE","type":"TTY","arrangement":"Auto_Fac"},"ZBRE_XOL":{"group":"ZB RE","type":"TTY","arrangement":"XOL"},"ZEPRE_QS":{"group":"ZEP RE","type":"TTY","arrangement":"QS"},"ZEPRESURP":{"group":"ZEP RE","type":"TTY","arrangement":"Surplus"},"ZEPRE_AUTO":{"group":"ZEP RE","type":"TTY","arrangement":"Auto_Fac"},"ZEPRE_XOL":{"group":"ZEP RE","type":"TTY","arrangement":"XOL"},"Zimnat_Auto":{"group":"ZIMNAT","type":"TTY","arrangement":"Auto_Fac"}},
+  ZWG: {"AFC":{"group":"AFC","type":"FAC","arrangement":"Direct"},"capitol":{"group":"Capitol","type":"FAC","arrangement":"Direct"},"CBZ-CAP":{"group":"CBZ","type":"FAC","arrangement":"Direct"},"CELCO":{"group":"CELCO","type":"FAC","arrangement":"Direct"},"CHAMPIONS":{"group":"CHAMPIONS","type":"FAC","arrangement":"Direct"},"CREDSURE/CAPITOL":{"group":"CREDSURE","type":"FAC","arrangement":"Capitol Re"},"EAGLEGUY":{"group":"EAGLE","type":"FAC","arrangement":"GUY"},"EMERITUSLIFE":{"group":"EMERITUS RE","type":"FAC","arrangement":"Direct"},"EMERITUS_FAC":{"group":"EMERITUS RE","type":"FAC","arrangement":"Direct"},"EMERITUS":{"group":"EMERITUS RE","type":"FAC","arrangement":"Direct"},"EMERITUS/GUY":{"group":"EMERITUS RE","type":"FAC","arrangement":"GUY"},"EMERITUS RE/MINERVA":{"group":"EMERITUS RE","type":"FAC","arrangement":"Minerva Re"},"capitolemeritus":{"group":"EMERITUS RE","type":"FAC","arrangement":"Capitol Re"},"RBIEMERITUS":{"group":"EMERITUS RE","type":"FAC","arrangement":"RBI"},"SKYEMERITUS":{"group":"EMERITUS RE","type":"FAC","arrangement":"SkyBridge"},"FBC Re":{"group":"FBC RE","type":"FAC","arrangement":"Direct"},"FBC Re FAC":{"group":"FBC RE","type":"FAC","arrangement":"Direct"},"FBC RE/GUY":{"group":"FBC RE","type":"FAC","arrangement":"GUY"},"FBCRe/MINERVA":{"group":"FBC RE","type":"FAC","arrangement":"Minerva Re"},"capitolfbc":{"group":"FBC RE","type":"FAC","arrangement":"Capitol Re"},"RBIFBC":{"group":"FBC RE","type":"FAC","arrangement":"RBI"},"SKYFBC":{"group":"FBC RE","type":"FAC","arrangement":"SkyBridge"},"FIRSTREL":{"group":"FM RE","type":"FAC","arrangement":"Direct"},"FIRST_FAC":{"group":"FM RE","type":"FAC","arrangement":"Direct"},"FIRST":{"group":"FM RE","type":"FAC","arrangement":"Direct"},"FIRST/GUY":{"group":"FM RE","type":"FAC","arrangement":"GUY"},"FIRSTRE/MINERVA":{"group":"FM RE","type":"FAC","arrangement":"Minerva Re"},"CAPITOLFIRST":{"group":"FM RE","type":"FAC","arrangement":"Capitol Re"},"RBIFM":{"group":"FM RE","type":"FAC","arrangement":"RBI"},"GRAND_FAC":{"group":"GRAND RE","type":"FAC","arrangement":"Direct"},"GRAND":{"group":"GRAND RE","type":"FAC","arrangement":"Direct"},"GRANDRE/GUY":{"group":"GRAND RE","type":"FAC","arrangement":"GUY"},"GRANDRE/MINERVA":{"group":"GRAND RE","type":"FAC","arrangement":"Minerva Re"},"capitolgrand":{"group":"GRAND RE","type":"FAC","arrangement":"Capitol Re"},"RBIGRAND":{"group":"GRAND RE","type":"FAC","arrangement":"RBI"},"skygrand":{"group":"GRAND RE","type":"FAC","arrangement":"SkyBridge"},"Guy Carpenter":{"group":"Guy Carpenter","type":"FAC","arrangement":"Direct"},"ICZ":{"group":"ICZ","type":"FAC","arrangement":"Direct"},"Minerva Re":{"group":"MINERVA-RE","type":"FAC","arrangement":"Direct"},"MINERVA-RE":{"group":"MINERVA-RE","type":"FAC","arrangement":"Direct"},"NICOZ DIAMOND":{"group":"NICOZ","type":"FAC","arrangement":"Direct"},"NICOZ/GUY":{"group":"NICOZ","type":"FAC","arrangement":"GUY"},"NICOZ/MINERVA":{"group":"NICOZ","type":"FAC","arrangement":"Minerva Re"},"OLD MUTUAL INSURANCE":{"group":"OLD MUTUAL","type":"FAC","arrangement":"Direct"},"OLD MUTUAL/ BRIGHTRE":{"group":"OLD MUTUAL","type":"FAC","arrangement":"Bright Re"},"OLD MUTUAL/MINERVA":{"group":"OLD MUTUAL","type":"FAC","arrangement":"Minerva Re"},"QUALITY":{"group":"QUALITY","type":"FAC","arrangement":"Direct"},"RBI":{"group":"RBI","type":"FAC","arrangement":"Direct"},"SANTUARYINSURANCE":{"group":"SANTUARY INSURANCE","type":"FAC","arrangement":"Direct"},"THI":{"group":"THI","type":"FAC","arrangement":"Direct"},"TROP":{"group":"TROPICAL RE","type":"FAC","arrangement":"Direct"},"TROPICAL":{"group":"TROPICAL RE","type":"FAC","arrangement":"Direct"},"TROPICALRE_FAC":{"group":"TROPICAL RE","type":"FAC","arrangement":"Direct"},"TROPICAL/GUY":{"group":"TROPICAL RE","type":"FAC","arrangement":"GUY"},"TROPICALlRE/MINERVA":{"group":"TROPICAL RE","type":"FAC","arrangement":"Minerva Re"},"capitoltropical":{"group":"TROPICAL RE","type":"FAC","arrangement":"Capitol Re"},"RBITROPICAL":{"group":"TROPICAL RE","type":"FAC","arrangement":"RBI"},"SKYTROPICAL":{"group":"TROPICAL RE","type":"FAC","arrangement":"SkyBridge"},"WAICA RE":{"group":"WAICA RE","type":"FAC","arrangement":"Direct"},"WAICARE":{"group":"WAICA RE","type":"FAC","arrangement":"Direct"},"WAICA/GUY":{"group":"WAICA RE","type":"FAC","arrangement":"GUY"},"WAICA/MINERVA":{"group":"WAICA RE","type":"FAC","arrangement":"Minerva Re"},"CAPITOLWAICA":{"group":"WAICA RE","type":"FAC","arrangement":"Capitol Re"},"RBIWAICA":{"group":"WAICA RE","type":"FAC","arrangement":"RBI"},"ZB_FAC":{"group":"ZB RE","type":"FAC","arrangement":"Direct"},"ZB_RE":{"group":"ZB RE","type":"FAC","arrangement":"Direct"},"ZB/GUY":{"group":"ZB RE","type":"FAC","arrangement":"GUY"},"ZBRE/MINERVA":{"group":"ZB RE","type":"FAC","arrangement":"Minerva Re"},"capitolzb":{"group":"ZB RE","type":"FAC","arrangement":"Capitol Re"},"RBIZBRE":{"group":"ZB RE","type":"FAC","arrangement":"RBI"},"SKYZB":{"group":"ZB RE","type":"FAC","arrangement":"SkyBridge"},"ZEP_FAC":{"group":"ZEP RE","type":"FAC","arrangement":"Direct"},"ZEPRE":{"group":"ZEP RE","type":"FAC","arrangement":"Direct"},"ZEPRE/GUY":{"group":"ZEP RE","type":"FAC","arrangement":"GUY"},"ZEP_MINERVA":{"group":"ZEP RE","type":"FAC","arrangement":"Minerva Re"},"capitolzep":{"group":"ZEP RE","type":"FAC","arrangement":"Capitol Re"},"ZIMNAT LIFE":{"group":"ZIMNAT LIFE","type":"FAC","arrangement":"Direct"},"EMERITUS_XOL_2":{"group":"EMERITUS RE","type":"TTY","arrangement":"XOL"},"EMERITUS_XOL":{"group":"EMERITUS RE","type":"TTY","arrangement":"XOL"},"EMERITUS_QS":{"group":"EMERITUS RE","type":"TTY","arrangement":"QS"},"EMERITUS_AUTO":{"group":"EMERITUS RE","type":"TTY","arrangement":"Auto_Fac"},"EMERITUS_XL_BD":{"group":"EMERITUS RE","type":"TTY","arrangement":"XOL"},"FBC_XOL_2":{"group":"FBC RE","type":"TTY","arrangement":"XOL"},"FBC_XOL":{"group":"FBC RE","type":"TTY","arrangement":"XOL"},"FBC_XOL_BD":{"group":"FBC RE","type":"TTY","arrangement":"XOL"},"FBC_QS":{"group":"FBC RE","type":"TTY","arrangement":"QS"},"FBC Re Auto":{"group":"FBC RE","type":"TTY","arrangement":"Auto_Fac"},"FIRST_QS":{"group":"FM RE","type":"TTY","arrangement":"QS"},"FIRST_AUTO":{"group":"FM RE","type":"TTY","arrangement":"Auto_Fac"},"FIRSTRE_XOL":{"group":"FM RE","type":"TTY","arrangement":"XOL"},"GRANDRE_XOL_2":{"group":"GRAND RE","type":"TTY","arrangement":"XOL"},"GRANDRE QS":{"group":"GRAND RE","type":"TTY","arrangement":"QS"},"GRANDRE_AUTO":{"group":"GRAND RE","type":"TTY","arrangement":"Auto_Fac"},"GRANDRE_XOL":{"group":"GRAND RE","type":"TTY","arrangement":"XOL"},"GRAND_QS":{"group":"GRAND RE","type":"TTY","arrangement":"QS"},"GRAND RE AUTO FAC 1":{"group":"GRAND RE","type":"TTY","arrangement":"Auto_Fac"},"GRANDRE_XOL_BD":{"group":"GRAND RE","type":"TTY","arrangement":"XOL"},"MinervaRe Auto Fac 1":{"group":"Minerva Re","type":"TTY","arrangement":"Auto_Fac"},"TRANSAXISRE AUTO FAC":{"group":"TRANSAXIS RE","type":"TTY","arrangement":"Auto_Fac"},"TROPICAL_XOL":{"group":"TROPICAL RE","type":"TTY","arrangement":"XOL"},"TROPICAL_XL_BD":{"group":"TROPICAL RE","type":"TTY","arrangement":"XOL"},"TROPICAL_QS":{"group":"TROPICAL RE","type":"TTY","arrangement":"QS"},"TROPICALSURP":{"group":"TROPICAL RE","type":"TTY","arrangement":"Surplus"},"TROPICALRE_AUTO":{"group":"TROPICAL RE","type":"TTY","arrangement":"Auto_Fac"},"WAICA_XOL":{"group":"WAICA RE","type":"TTY","arrangement":"XOL"},"WAICA_XOL_BD":{"group":"WAICA RE","type":"TTY","arrangement":"XOL"},"WAICA_QS":{"group":"WAICA RE","type":"TTY","arrangement":"QS"},"WAICA_AUTO":{"group":"WAICA RE","type":"TTY","arrangement":"Auto_Fac"},"ZB_QS":{"group":"ZB RE","type":"TTY","arrangement":"QS"},"ZB_AUTO":{"group":"ZB RE","type":"TTY","arrangement":"Auto_Fac"},"ZBRE_XOL":{"group":"ZB RE","type":"TTY","arrangement":"XOL"},"ZEPRE_XOL_2":{"group":"ZEP RE","type":"TTY","arrangement":"XOL"},"ZEPRE_XOL":{"group":"ZEP RE","type":"TTY","arrangement":"XOL"},"ZEPRE_XOL_BD":{"group":"ZEP RE","type":"TTY","arrangement":"XOL"},"ZEPRE_QS":{"group":"ZEP RE","type":"TTY","arrangement":"QS"},"ZEPRE_AUTO":{"group":"ZEP RE","type":"TTY","arrangement":"Auto_Fac"}}
+};
+
+</script>
+<script>
+// ---------- Constants ----------
+const FAC_ORDER = {
+  USD: ['Direct', 'Agreed', 'Econet', 'Bright Re', 'Minerva Re', 'Capitol Re', 'SkyBridge'],
+  ZWG: ['Direct', 'GUY', 'Bright Re', 'Minerva Re', 'Capitol Re', 'RBI', 'SkyBridge'],
+};
+const TTY_ORDER = ['QS', 'Surplus', 'Auto_Fac', 'XOL'];
+const COLS = ['code','name','unallocated','balance','notYetDue','d0_30','d31_60','d61_90','d91_120','d121_180','d180_365','over365'];
+
+const NAVY = 'FF1F3864';
+const LIGHT_BLUE = 'FFD9E1F2';
+const AMBER = 'FFFFF2CC';
+const RED_TEXT = 'FFC00000';
+const GREEN_TEXT = 'FF006100';
+
+// ---------- Parsing ----------
+function parseAgingSheet(ws) {
+  let startRow = null;
+  const maxScan = Math.min(ws.rowCount, 30);
+  for (let r = 1; r <= maxScan; r++) {
+    const a = ws.getCell(r, 1).value;
+    const d = ws.getCell(r, 4).value;
+    if (typeof a === 'string' && a.trim() !== '' && typeof d === 'number') {
+      startRow = r;
+      break;
+    }
+  }
+  if (startRow === null) {
+    throw new Error('Could not find the data start row. Expected an A/C Code (text) in column A and a numeric Account Balance in column D within the first 30 rows.');
+  }
+
+  const rows = [];
+  for (let r = startRow; r <= ws.rowCount; r++) {
+    const a = ws.getCell(r, 1).value;
+    const b = ws.getCell(r, 2).value;
+    const aEmpty = (a === null || a === undefined || a === '');
+    const bEmpty = (b === null || b === undefined || b === '');
+    if (aEmpty && bEmpty) break;
+    if (aEmpty) continue;
+    const rec = {};
+    for (let c = 0; c < COLS.length; c++) {
+      let v = ws.getCell(r, c + 1).value;
+      if (v && typeof v === 'object' && 'result' in v) v = v.result;
+      rec[COLS[c]] = v;
+    }
+    rec.code = String(rec.code).trim();
+    rec.name = rec.name != null ? String(rec.name).trim() : '';
+    rec.balance = typeof rec.balance === 'number' ? rec.balance : 0;
+    rows.push(rec);
+  }
+  return rows;
+}
+
+function splitPayablesReceivables(rows) {
+  return {
+    payables: rows.filter(r => r.balance < 0),
+    receivables: rows.filter(r => r.balance > 0),
+  };
+}
+
+function aggregate(rows, lookup) {
+  const facTable = {};
+  const ttyTable = {};
+  const unmapped = [];
+  let mappedTotal = 0;
+
+  for (const row of rows) {
+    const entry = lookup[row.code];
+    if (!entry) {
+      unmapped.push({ code: row.code, name: row.name, balance: row.balance });
+      continue;
+    }
+    const target = entry.type === 'FAC' ? facTable : ttyTable;
+    if (!target[entry.group]) target[entry.group] = {};
+    target[entry.group][entry.arrangement] = (target[entry.group][entry.arrangement] || 0) + row.balance;
+    mappedTotal += row.balance;
+  }
+
+  const sourceTotal = rows.reduce((s, r) => s + r.balance, 0);
+  const unmappedTotal = unmapped.reduce((s, r) => s + r.balance, 0);
+
+  return { facTable, ttyTable, unmapped, sourceTotal, mappedTotal, unmappedTotal };
+}
+
+// ---------- Sheet building ----------
+function thinBorder() {
+  const side = { style: 'thin', color: { argb: 'FFB7B7B7' } };
+  return { top: side, bottom: side, left: side, right: side };
+}
+function styleHeader(cell) {
+  cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } };
+  cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  cell.border = thinBorder();
+}
+function styleBody(cell, numeric) {
+  cell.font = { name: 'Arial', size: 10 };
+  cell.border = thinBorder();
+  if (numeric) {
+    cell.numberFormat = '#,##0.00;(#,##0.00);"-"';
+    cell.alignment = { horizontal: 'right' };
+  }
+}
+function styleTotal(cell, numeric) {
+  cell.font = { name: 'Arial', size: 10, bold: true };
+  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_BLUE } };
+  cell.border = thinBorder();
+  if (numeric) {
+    cell.numberFormat = '#,##0.00;(#,##0.00);"-"';
+    cell.alignment = { horizontal: 'right' };
+  }
+}
+
+function writeTable(ws, startRow, title, table, order) {
+  ws.mergeCells(startRow, 1, startRow, order.length + 2);
+  const titleCell = ws.getCell(startRow, 1);
+  titleCell.value = title;
+  titleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: NAVY } };
+  let r = startRow + 1;
+
+  const headers = ['Reinsurer', ...order, 'Total'];
+  headers.forEach((h, i) => { const c = ws.getCell(r, i + 1); c.value = h; styleHeader(c); });
+  r += 1;
+
+  const groups = Object.keys(table).sort();
+  const dataStart = r;
+  for (const group of groups) {
+    const c0 = ws.getCell(r, 1); c0.value = group; styleBody(c0, false);
+    let rowTotal = 0;
+    order.forEach((arr, i) => {
+      const val = table[group][arr] || 0;
+      rowTotal += val;
+      const c = ws.getCell(r, i + 2); c.value = val; styleBody(c, true);
+    });
+    const cTot = ws.getCell(r, order.length + 2); cTot.value = rowTotal; styleBody(cTot, true);
+    r += 1;
+  }
+  const dataEnd = r - 1;
+
+  const cLabel = ws.getCell(r, 1); cLabel.value = 'Total'; styleTotal(cLabel, false);
+  for (let ci = 2; ci <= order.length + 2; ci++) {
+    const colLetter = ws.getColumn(ci).letter;
+    const cell = ws.getCell(r, ci);
+    cell.value = groups.length > 0 ? { formula: `SUM(${colLetter}${dataStart}:${colLetter}${dataEnd})` } : 0;
+    styleTotal(cell, true);
+  }
+  const totalRow = r;
+  r += 2;
+  return { nextRow: r, totalRowRange: [totalRow, order.length + 2] };
+}
+
+function writeUnmappedTable(ws, startRow, unmapped) {
+  ws.mergeCells(startRow, 1, startRow, 3);
+  const titleCell = ws.getCell(startRow, 1);
+  titleCell.value = 'Unclassified Accounts (not in FAC/TTY lookup)';
+  titleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: RED_TEXT } };
+  let r = startRow + 1;
+
+  ['A/C Code', 'A/C Name', 'Balance'].forEach((h, i) => { const c = ws.getCell(r, i + 1); c.value = h; styleHeader(c); });
+  r += 1;
+  const dataStart = r;
+  if (unmapped.length === 0) {
+    ws.mergeCells(r, 1, r, 3);
+    const c = ws.getCell(r, 1);
+    c.value = 'None — every account code was classified.';
+    c.font = { name: 'Arial', size: 10, italic: true, color: { argb: GREEN_TEXT } };
+    r += 1;
+  } else {
+    for (const u of unmapped) {
+      const c0 = ws.getCell(r, 1); c0.value = u.code; styleBody(c0, false);
+      c0.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AMBER } };
+      const c1 = ws.getCell(r, 2); c1.value = u.name; styleBody(c1, false);
+      c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AMBER } };
+      const c2 = ws.getCell(r, 3); c2.value = u.balance; styleBody(c2, true);
+      c2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AMBER } };
+      r += 1;
+    }
+  }
+  const dataEnd = r - 1;
+  r += 1;
+  return { nextRow: r, dataStart, dataEnd, hasData: unmapped.length > 0 };
+}
+
+function buildSummarySheet(workbook, sheetName, meta, agg, facOrder) {
+  const ws = workbook.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
+
+  ws.mergeCells(1, 1, 1, facOrder.length + 2);
+  const t = ws.getCell(1, 1); t.value = meta.title;
+  t.font = { name: 'Arial', size: 14, bold: true, color: { argb: NAVY } };
+
+  ws.mergeCells(2, 1, 2, facOrder.length + 2);
+  const sub = ws.getCell(2, 1); sub.value = meta.subtitle;
+  sub.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF666666' } };
+
+  let row = 4;
+  const fac = writeTable(ws, row, 'Facultative', agg.facTable, facOrder);
+  row = fac.nextRow;
+  const tty = writeTable(ws, row, 'Treaties', agg.ttyTable, TTY_ORDER);
+  row = tty.nextRow;
+  const unm = writeUnmappedTable(ws, row, agg.unmapped);
+  row = unm.nextRow;
+
+  ws.mergeCells(row, 1, row, 2);
+  const recLabel = ws.getCell(row, 1);
+  recLabel.value = 'Reconciliation check (Facultative + Treaty + Unclassified vs. source total)';
+  recLabel.font = { name: 'Arial', size: 10, bold: true };
+
+  const facTotalCell = `${ws.getColumn(fac.totalRowRange[1]).letter}${fac.totalRowRange[0]}`;
+  const ttyTotalCell = `${ws.getColumn(tty.totalRowRange[1]).letter}${tty.totalRowRange[0]}`;
+  const unmappedSumFormula = unm.hasData ? `SUM(C${unm.dataStart}:C${unm.dataEnd})` : '0';
+
+  const checkCell = ws.getCell(row, 3);
+  checkCell.value = { formula: `${facTotalCell}+${ttyTotalCell}+${unmappedSumFormula}-(${meta.sourceTotal})` };
+  checkCell.numberFormat = '#,##0.00;(#,##0.00);"-"';
+  checkCell.font = { name: 'Arial', size: 10, bold: true };
+
+  ws.getCell(row, 4).value = '(should be 0.00 — source total: ' + meta.sourceTotal.toFixed(2) + ')';
+  ws.getCell(row, 4).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF666666' } };
+
+  ws.getColumn(1).width = 22;
+  for (let i = 2; i <= facOrder.length + 2; i++) ws.getColumn(i).width = 14;
+  if (ws.getColumn(2).width < 34) ws.getColumn(2).width = 34;
+
+  return ws;
+}
+
+// ---------- Detail (raw split) sheet — matches the original RI Split deliverable ----------
+const DETAIL_HEADERS = ['A/C Code', 'A/C Name', 'Unallocated Cash', 'Account Balance', 'Not Yet Due',
+  '0-30 Days Due', '31-60', '61-90', '91-120', '121-180', '180-365', 'Over 365 days'];
+const DETAIL_FIELDS = ['code', 'name', 'unallocated', 'balance', 'notYetDue', 'd0_30', 'd31_60', 'd61_90', 'd91_120', 'd121_180', 'd180_365', 'over365'];
+
+function buildDetailSheet(workbook, sheetName, meta, rows) {
+  const ws = workbook.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
+
+  ws.mergeCells(1, 1, 1, DETAIL_HEADERS.length);
+  const t = ws.getCell(1, 1); t.value = meta.title;
+  t.font = { name: 'Arial', size: 14, bold: true, color: { argb: NAVY } };
+
+  ws.mergeCells(2, 1, 2, DETAIL_HEADERS.length);
+  const sub = ws.getCell(2, 1); sub.value = meta.subtitle;
+  sub.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF666666' } };
+
+  const headerRow = 4;
+  DETAIL_HEADERS.forEach((h, i) => { const c = ws.getCell(headerRow, i + 1); c.value = h; styleHeader(c); });
+
+  const sorted = rows.slice().sort((a, b) => meta.sortDir === 'asc' ? a.balance - b.balance : b.balance - a.balance);
+  const dataStart = headerRow + 1;
+  let r = dataStart;
+  for (const row of sorted) {
+    DETAIL_FIELDS.forEach((f, i) => {
+      const c = ws.getCell(r, i + 1);
+      c.value = row[f];
+      styleBody(c, i >= 2); // numeric from column C onward
+    });
+    r += 1;
+  }
+  const dataEnd = r - 1;
+
+  const c0 = ws.getCell(r, 1); c0.value = 'TOTAL'; styleTotal(c0, false);
+  const c1 = ws.getCell(r, 2); c1.value = `${sorted.length} accounts`; styleTotal(c1, false);
+  for (let ci = 3; ci <= DETAIL_HEADERS.length; ci++) {
+    const colLetter = ws.getColumn(ci).letter;
+    const cell = ws.getCell(r, ci);
+    cell.value = sorted.length > 0 ? { formula: `SUM(${colLetter}${dataStart}:${colLetter}${dataEnd})` } : 0;
+    styleTotal(cell, true);
+  }
+
+  ws.getColumn(1).width = 18;
+  ws.getColumn(2).width = 32;
+  for (let i = 3; i <= DETAIL_HEADERS.length; i++) ws.getColumn(i).width = 14;
+  ws.freeze_panes = 'A5';
+  ws.views = [{ state: 'frozen', ySplit: 4, showGridLines: false }];
+
+  return ws;
+}
+
+
+const STORAGE_KEY = 'riSplitCustomMappings_v1';
+
+function loadCustomMappings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { USD: {}, ZWG: {} };
+    const parsed = JSON.parse(raw);
+    return { USD: parsed.USD || {}, ZWG: parsed.ZWG || {} };
+  } catch (e) {
+    console.warn('Could not read saved mappings, starting fresh.', e);
+    return { USD: {}, ZWG: {} };
+  }
+}
+
+function saveCustomMappings() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(customMappings));
+    return true;
+  } catch (e) {
+    console.warn('Could not save mappings to this browser.', e);
+    return false;
+  }
+}
+
+let customMappings = loadCustomMappings();
+
+function getMergedLookup(currency) {
+  return Object.assign({}, LOOKUP[currency], customMappings[currency]);
+}
+
+function countCustomMappings() {
+  return Object.keys(customMappings.USD).length + Object.keys(customMappings.ZWG).length;
+}
+
+function updateCustomBadge() {
+  const badge = document.getElementById('customCountBadge');
+  const n = countCustomMappings();
+  if (n > 0) {
+    badge.textContent = n;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ---------- Settings modal ----------
+let activeTab = 'USD';
+let editingCode = null; // if set, Save updates this code instead of adding a new one
+
+function openSettings(prefill) {
+  document.getElementById('settingsOverlay').classList.add('show');
+  if (prefill && prefill.currency) {
+    setActiveTab(prefill.currency);
+  } else {
+    renderMappingTable();
+  }
+  if (prefill) {
+    editingCode = null;
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    document.getElementById('addFormTitle').textContent = 'Classify this account';
+    document.getElementById('fCode').value = prefill.code || '';
+    document.getElementById('fCode').disabled = true;
+    document.getElementById('fGroup').value = '';
+    document.getElementById('fType').value = 'FAC';
+    populateArrangementOptions();
+    setFormMsg('', '');
+    document.getElementById('fGroup').focus();
+  } else {
+    resetAddForm();
+  }
+  populateGroupDatalist();
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('show');
+}
+
+function setActiveTab(currency) {
+  activeTab = currency;
+  document.getElementById('tabUSD').classList.toggle('active', currency === 'USD');
+  document.getElementById('tabZWG').classList.toggle('active', currency === 'ZWG');
+  document.getElementById('mappingSearch').value = '';
+  populateArrangementOptions();
+  populateGroupDatalist();
+  renderMappingTable();
+}
+
+function populateArrangementOptions() {
+  const type = document.getElementById('fType').value;
+  const sel = document.getElementById('fArrangement');
+  const options = type === 'FAC' ? FAC_ORDER[activeTab] : TTY_ORDER;
+  sel.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+function populateGroupDatalist() {
+  const lookup = getMergedLookup(activeTab);
+  const groups = Array.from(new Set(Object.values(lookup).map(v => v.group))).sort();
+  document.getElementById('groupList').innerHTML = groups.map(g => `<option value="${g}"></option>`).join('');
+}
+
+function renderMappingTable() {
+  const lookup = getMergedLookup(activeTab);
+  const search = document.getElementById('mappingSearch').value.trim().toLowerCase();
+  const rows = Object.entries(lookup)
+    .filter(([code, v]) => !search || code.toLowerCase().includes(search) || v.group.toLowerCase().includes(search))
+    .sort((a, b) => a[1].group.localeCompare(b[1].group) || a[0].localeCompare(b[0]));
+
+  const tbody = document.getElementById('mappingTableBody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--slate-light);padding:16px;">No matches.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(([code, v]) => {
+    const isCustom = customMappings[activeTab].hasOwnProperty(code);
+    const rowClass = isCustom ? 'custom-row' : '';
+    const srcTag = isCustom
+      ? '<span class="src-tag custom">Custom</span>'
+      : '<span class="src-tag builtin">Built-in</span>';
+    const actions = isCustom
+      ? `<button class="link-btn" onclick="editMapping('${escapeJs(code)}')">Edit</button><button class="link-btn danger" onclick="deleteMapping('${escapeJs(code)}')">Delete</button>`
+      : '<span style="color:var(--slate-light);font-size:11px;">—</span>';
+    return `<tr class="${rowClass}">
+      <td>${escapeHtml(code)}</td>
+      <td>${escapeHtml(v.group)}</td>
+      <td>${v.type}</td>
+      <td>${escapeHtml(v.arrangement)}</td>
+      <td>${srcTag}</td>
+      <td class="actions-cell">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escapeJs(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function resetAddForm() {
+  editingCode = null;
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('addFormTitle').textContent = 'Add a new account code';
+  document.getElementById('fCode').value = '';
+  document.getElementById('fCode').disabled = false;
+  document.getElementById('fGroup').value = '';
+  document.getElementById('fType').value = 'FAC';
+  populateArrangementOptions();
+  setFormMsg('', '');
+}
+
+function editMapping(code) {
+  const entry = customMappings[activeTab][code];
+  if (!entry) return;
+  editingCode = code;
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('addFormTitle').textContent = `Editing "${code}"`;
+  document.getElementById('fCode').value = code;
+  document.getElementById('fCode').disabled = true;
+  document.getElementById('fGroup').value = entry.group;
+  document.getElementById('fType').value = entry.type;
+  populateArrangementOptions();
+  document.getElementById('fArrangement').value = entry.arrangement;
+  setFormMsg('', '');
+}
+
+function deleteMapping(code) {
+  if (!confirm(`Remove the custom mapping for "${code}"? This account will show as unclassified again until re-added.`)) return;
+  delete customMappings[activeTab][code];
+  saveCustomMappings();
+  renderMappingTable();
+  populateGroupDatalist();
+  updateCustomBadge();
+  if (editingCode === code) resetAddForm();
+}
+
+function setFormMsg(text, type) {
+  const el = document.getElementById('formMsg');
+  el.textContent = text;
+  el.className = 'form-msg' + (type ? ' ' + type : '');
+}
+
+function saveMapping() {
+  const code = document.getElementById('fCode').value.trim();
+  const group = document.getElementById('fGroup').value.trim();
+  const type = document.getElementById('fType').value;
+  const arrangement = document.getElementById('fArrangement').value;
+
+  if (!code) { setFormMsg('A/C Code is required.', 'error'); return; }
+  if (!group) { setFormMsg('Master Group is required.', 'error'); return; }
+  if (!arrangement) { setFormMsg('Arrangement is required.', 'error'); return; }
+
+  const builtIn = LOOKUP[activeTab][code];
+  const existingCustom = customMappings[activeTab][code];
+  if (!editingCode && (builtIn || existingCustom)) {
+    setFormMsg(`"${code}" is already mapped. Use Edit on that row instead.`, 'error');
+    return;
+  }
+
+  customMappings[activeTab][code] = { group, type, arrangement };
+  const persisted = saveCustomMappings();
+  renderMappingTable();
+  populateGroupDatalist();
+  updateCustomBadge();
+  resetAddForm();
+  setFormMsg(persisted ? `Saved "${code}".` : `Saved for this session (browser storage unavailable).`, 'ok');
+}
+
+function exportMappings() {
+  const blob = new Blob([JSON.stringify(customMappings, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `RI_Split_Custom_Mappings_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function importMappings(file) {
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const incomingUSD = parsed.USD || {};
+    const incomingZWG = parsed.ZWG || {};
+    const n = Object.keys(incomingUSD).length + Object.keys(incomingZWG).length;
+    if (!confirm(`Import ${n} mapping(s)? This will merge into (and can overwrite) your current custom mappings.`)) return;
+    customMappings.USD = Object.assign({}, customMappings.USD, incomingUSD);
+    customMappings.ZWG = Object.assign({}, customMappings.ZWG, incomingZWG);
+    saveCustomMappings();
+    renderMappingTable();
+    populateGroupDatalist();
+    updateCustomBadge();
+    setFormMsg(`Imported ${n} mapping(s).`, 'ok');
+  } catch (e) {
+    alert('Could not read that file — is it a mappings JSON exported from this tool?');
+  }
+}
+
+function resetCustomMappings() {
+  const n = Object.keys(customMappings[activeTab]).length;
+  if (n === 0) { alert(`No custom ${activeTab} mappings to reset.`); return; }
+  if (!confirm(`Remove all ${n} custom ${activeTab} mapping(s)? Export a backup first if you want to keep them.`)) return;
+  customMappings[activeTab] = {};
+  saveCustomMappings();
+  renderMappingTable();
+  populateGroupDatalist();
+  updateCustomBadge();
+  resetAddForm();
+}
+
+document.getElementById('settingsBtn').addEventListener('click', () => openSettings());
+document.getElementById('settingsCloseBtn').addEventListener('click', closeSettings);
+document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'settingsOverlay') closeSettings();
+});
+document.getElementById('tabUSD').addEventListener('click', () => setActiveTab('USD'));
+document.getElementById('tabZWG').addEventListener('click', () => setActiveTab('ZWG'));
+document.getElementById('mappingSearch').addEventListener('input', renderMappingTable);
+document.getElementById('fType').addEventListener('change', populateArrangementOptions);
+document.getElementById('saveMappingBtn').addEventListener('click', saveMapping);
+document.getElementById('cancelEditBtn').addEventListener('click', resetAddForm);
+document.getElementById('exportMappingsBtn').addEventListener('click', exportMappings);
+document.getElementById('resetCustomBtn').addEventListener('click', resetCustomMappings);
+document.getElementById('importMappingsInput').addEventListener('change', (e) => {
+  if (e.target.files.length) importMappings(e.target.files[0]);
+  e.target.value = '';
+});
+
+populateArrangementOptions();
+updateCustomBadge();
+
+// ---------- UI wiring ----------
+const state = { USD: null, ZWG: null };
+
+function setupDropzone(dropId, inputId, filenameId, currency) {
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+  const filenameEl = document.getElementById(filenameId);
+
+  drop.addEventListener('click', () => input.click());
+  drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      handleFile(input.files[0], currency, filenameEl);
+    }
+  });
+  input.addEventListener('change', () => {
+    if (input.files.length) handleFile(input.files[0], currency, filenameEl);
+  });
+}
+
+function handleFile(file, currency, filenameEl) {
+  state[currency] = file;
+  filenameEl.textContent = file.name;
+  filenameEl.classList.add('show');
+  updateProcessButton();
+}
+
+function updateProcessButton() {
+  const btn = document.getElementById('processBtn');
+  const status = document.getElementById('status');
+  const hasAny = state.USD || state.ZWG;
+  btn.disabled = !hasAny;
+  status.classList.remove('error');
+  status.textContent = hasAny
+    ? 'Ready. Click Generate Summary.'
+    : 'Upload at least one file to begin.';
+}
+
+setupDropzone('dropUSD', 'fileUSD', 'filenameUSD', 'USD');
+setupDropzone('dropZWG', 'fileZWG', 'filenameZWG', 'ZWG');
+
+let outputBuffer = null;
+let pendingParsedData = null; // { USD: {rows, payables, receivables, fileName}, ZWG: {...} }
+const gateResolved = new Set(); // `${currency}::${code}` keys resolved in the current gate session
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  const status = document.getElementById('status');
+  const btn = document.getElementById('processBtn');
+  btn.disabled = true;
+  status.classList.remove('error');
+  status.textContent = 'Reading files…';
+
+  try {
+    const parsedData = {};
+    for (const currency of ['USD', 'ZWG']) {
+      const file = state[currency];
+      if (!file) continue;
+      status.textContent = `Parsing ${currency} aging export…`;
+      const buf = await file.arrayBuffer();
+      const inWb = new ExcelJS.Workbook();
+      await inWb.xlsx.load(buf);
+      const ws = inWb.worksheets[0];
+      const rows = parseAgingSheet(ws);
+      const { payables, receivables } = splitPayablesReceivables(rows);
+      parsedData[currency] = { rows, payables, receivables, fileName: file.name };
+    }
+    pendingParsedData = parsedData;
+
+    const unmapped = findUnmappedAcross(parsedData);
+    if (unmapped.length > 0) {
+      status.textContent = `${unmapped.length} account${unmapped.length > 1 ? 's' : ''} need classification before continuing.`;
+      openGate(unmapped);
+      btn.disabled = false;
+      return;
+    }
+
+    await buildAndShowResults(parsedData);
+    status.textContent = 'Done.';
+  } catch (err) {
+    console.error(err);
+    status.classList.add('error');
+    status.textContent = 'Error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function findUnmappedAcross(parsedData) {
+  const seen = new Map(); // key `${currency}::${code}` -> item
+  for (const currency of ['USD', 'ZWG']) {
+    const data = parsedData[currency];
+    if (!data) continue;
+    const lookup = getMergedLookup(currency);
+    for (const row of [...data.payables, ...data.receivables]) {
+      if (lookup[row.code]) continue;
+      const key = `${currency}::${row.code}`;
+      if (!seen.has(key)) seen.set(key, { currency, code: row.code, name: row.name, balance: row.balance });
+    }
+  }
+  return Array.from(seen.values());
+}
+
+// ---------- Master Overview sheet — all groups x all currencies x Treaty/Facultative ----------
+function sumTableForGroup(table, group) {
+  if (!table[group]) return 0;
+  return Object.values(table[group]).reduce((a, b) => a + b, 0);
+}
+
+function buildMasterOverviewSheet(workbook, currencyData) {
+  const currencies = Object.keys(currencyData); // e.g. ['USD','ZWG'] or just one
+  const ws = workbook.addWorksheet('Overview (All Groups)', { views: [{ showGridLines: false }] });
+
+  // collect every group that appears anywhere, across every currency/split
+  const groupSet = new Set();
+  currencies.forEach(cur => {
+    ['payAgg', 'recAgg'].forEach(k => {
+      const agg = currencyData[cur][k];
+      Object.keys(agg.facTable).forEach(g => groupSet.add(g));
+      Object.keys(agg.ttyTable).forEach(g => groupSet.add(g));
+    });
+  });
+  const groups = Array.from(groupSet).sort();
+
+  // lay out columns: 3 per split (Treaty, Facultative, Total), 2 splits per currency
+  let col = 2; // column A is the group name
+  const currencyColRanges = [];
+  const splitColRanges = [];
+  currencies.forEach(cur => {
+    const curStart = col;
+    ['Payables', 'Receivables'].forEach(split => {
+      const splitStart = col;
+      col += 3;
+      splitColRanges.push({ currency: cur, split, startCol: splitStart });
+    });
+    currencyColRanges.push({ currency: cur, startCol: curStart, endCol: col - 1 });
+  });
+  const lastCol = col - 1;
+
+  ws.mergeCells(1, 1, 3, 1);
+  for (let r = 1; r <= 3; r++) { const c = ws.getCell(r, 1); c.value = r === 1 ? 'Reinsurer Group' : ''; styleHeader(c); }
+
+  currencyColRanges.forEach(({ currency, startCol, endCol }) => {
+    ws.mergeCells(1, startCol, 1, endCol);
+    for (let cc = startCol; cc <= endCol; cc++) { const c = ws.getCell(1, cc); if (cc === startCol) c.value = currency; styleHeader(c); }
+  });
+
+  splitColRanges.forEach(({ split, startCol }) => {
+    const endCol = startCol + 2;
+    ws.mergeCells(2, startCol, 2, endCol);
+    for (let cc = startCol; cc <= endCol; cc++) { const c = ws.getCell(2, cc); if (cc === startCol) c.value = split; styleHeader(c); }
+    ['Treaty', 'Facultative', 'Total'].forEach((label, i) => {
+      const c = ws.getCell(3, startCol + i); c.value = label; styleHeader(c);
+    });
+  });
+
+  let r = 4;
+  const dataStart = r;
+  for (const group of groups) {
+    const c0 = ws.getCell(r, 1); c0.value = group; styleBody(c0, false);
+    splitColRanges.forEach(({ currency, split, startCol }) => {
+      const aggKey = split === 'Payables' ? 'payAgg' : 'recAgg';
+      const agg = currencyData[currency] ? currencyData[currency][aggKey] : null;
+      const treaty = agg ? sumTableForGroup(agg.ttyTable, group) : 0;
+      const fac = agg ? sumTableForGroup(agg.facTable, group) : 0;
+      const total = treaty + fac;
+      const c1 = ws.getCell(r, startCol); c1.value = treaty; styleBody(c1, true);
+      const c2 = ws.getCell(r, startCol + 1); c2.value = fac; styleBody(c2, true);
+      const c3 = ws.getCell(r, startCol + 2); c3.value = total; styleBody(c3, true);
+    });
+    r += 1;
+  }
+  const dataEnd = r - 1;
+
+  const cLabel = ws.getCell(r, 1); cLabel.value = 'TOTAL'; styleTotal(cLabel, false);
+  for (let cc = 2; cc <= lastCol; cc++) {
+    const colLetter = ws.getColumn(cc).letter;
+    const cell = ws.getCell(r, cc);
+    cell.value = groups.length > 0 ? { formula: `SUM(${colLetter}${dataStart}:${colLetter}${dataEnd})` } : 0;
+    styleTotal(cell, true);
+  }
+
+  ws.getColumn(1).width = 22;
+  for (let cc = 2; cc <= lastCol; cc++) ws.getColumn(cc).width = 12;
+  ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 3, showGridLines: false }];
+
+  return ws;
+}
+
+async function buildAndShowResults(parsedData) {
+  const status = document.getElementById('status');
+  status.textContent = 'Building workbook…';
+
+  const outWb = new ExcelJS.Workbook();
+  const reconRows = [];
+  const unmappedSections = [];
+  const currencyData = {};
+
+  // Pass 1: aggregate everything first — the Overview sheet needs all of it up front
+  for (const currency of ['USD', 'ZWG']) {
+    const data = parsedData[currency];
+    if (!data) continue;
+    const lookup = getMergedLookup(currency);
+    const payAgg = aggregate(data.payables, lookup);
+    const recAgg = aggregate(data.receivables, lookup);
+    currencyData[currency] = { data, payAgg, recAgg };
+  }
+
+  buildMasterOverviewSheet(outWb, currencyData);
+
+  // Pass 2: detail + FAC/TTY summary sheets per currency
+  for (const currency of ['USD', 'ZWG']) {
+    const cd = currencyData[currency];
+    if (!cd) continue;
+    const { data, payAgg, recAgg } = cd;
+    const facOrder = FAC_ORDER[currency];
+
+    buildDetailSheet(outWb, `${currency} Payables (Detail)`, {
+      title: `${currency} Payables`,
+      subtitle: `Source: ${data.fileName} | Account Balance < 0 | ${data.payables.length} accounts`,
+      sortDir: 'asc',
+    }, data.payables);
+
+    buildDetailSheet(outWb, `${currency} Receivables (Detail)`, {
+      title: `${currency} Receivables`,
+      subtitle: `Source: ${data.fileName} | Account Balance > 0 | ${data.receivables.length} accounts`,
+      sortDir: 'desc',
+    }, data.receivables);
+
+    buildSummarySheet(outWb, `${currency} Payables (FAC-TTY)`, {
+      title: `${currency} Payables — FAC / TTY Summary`,
+      subtitle: `Source: ${data.fileName} | Account Balance < 0 | ${data.payables.length} accounts`,
+      sourceTotal: payAgg.sourceTotal,
+    }, payAgg, facOrder);
+
+    buildSummarySheet(outWb, `${currency} Receivables (FAC-TTY)`, {
+      title: `${currency} Receivables — FAC / TTY Summary`,
+      subtitle: `Source: ${data.fileName} | Account Balance > 0 | ${data.receivables.length} accounts`,
+      sourceTotal: recAgg.sourceTotal,
+    }, recAgg, facOrder);
+
+    reconRows.push({ sheet: `${currency} Payables (FAC-TTY)`, agg: payAgg });
+    reconRows.push({ sheet: `${currency} Receivables (FAC-TTY)`, agg: recAgg });
+
+    if (payAgg.unmapped.length) unmappedSections.push({ label: `${currency} Payables`, currency, items: payAgg.unmapped });
+    if (recAgg.unmapped.length) unmappedSections.push({ label: `${currency} Receivables`, currency, items: recAgg.unmapped });
+  }
+
+  outputBuffer = await outWb.xlsx.writeBuffer();
+  renderResults(reconRows, unmappedSections);
+  document.getElementById('results').classList.add('show');
+}
+
+// ---------- Classification gate (blocks the workbook build until everything is matched) ----------
+function openGate(unmappedList) {
+  gateResolved.clear();
+  document.getElementById('gateOverlay').classList.add('show');
+  document.getElementById('gateSubtitle').textContent =
+    `${unmappedList.length} account code${unmappedList.length > 1 ? 's' : ''} not yet in the FAC/TTY lookup.`;
+
+  const codeList = unmappedList.map(u => `"${u.code}" (${u.currency})`).join(', ');
+  document.getElementById('gateMessage').innerHTML =
+    `Match this before continuing: <strong>${codeList}</strong>. Classify each one below — the summary won't be generated until all of them are matched.`;
+
+  document.getElementById('gateGroupListUSD').innerHTML =
+    Array.from(new Set(Object.values(getMergedLookup('USD')).map(v => v.group))).sort().map(g => `<option value="${escapeHtml(g)}"></option>`).join('');
+  document.getElementById('gateGroupListZWG').innerHTML =
+    Array.from(new Set(Object.values(getMergedLookup('ZWG')).map(v => v.group))).sort().map(g => `<option value="${escapeHtml(g)}"></option>`).join('');
+
+  const tbody = document.getElementById('gateTableBody');
+  tbody.innerHTML = unmappedList.map((u, i) => {
+    const rowId = `gaterow_${i}`;
+    const facOptions = FAC_ORDER[u.currency].map(o => `<option value="${o}">${o}</option>`).join('');
+    return `<tr id="${rowId}" data-currency="${u.currency}" data-code="${escapeHtml(u.code)}">
+      <td>${escapeHtml(u.code)}<div style="font-size:10.5px;color:var(--slate-light);">${u.currency}</div></td>
+      <td style="font-size:11px;color:var(--slate-light);">${escapeHtml(u.name)}<br>${fmt(u.balance)}</td>
+      <td><input type="text" class="gate-group" list="gateGroupList${u.currency}" style="width:110px;padding:5px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;" /></td>
+      <td>
+        <select class="gate-type" style="padding:5px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;" onchange="updateGateArrangementOptions('${rowId}')">
+          <option value="FAC">FAC</option>
+          <option value="TTY">TTY</option>
+        </select>
+      </td>
+      <td><select class="gate-arrangement" style="padding:5px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;">${facOptions}</select></td>
+      <td><button class="link-btn" onclick="saveGateRow('${rowId}')">Save</button></td>
+    </tr>`;
+  }).join('');
+
+  updateGateProgress(unmappedList.length);
+}
+
+function updateGateArrangementOptions(rowId) {
+  const tr = document.getElementById(rowId);
+  const currency = tr.getAttribute('data-currency');
+  const type = tr.querySelector('.gate-type').value;
+  const options = type === 'FAC' ? FAC_ORDER[currency] : TTY_ORDER;
+  tr.querySelector('.gate-arrangement').innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+function saveGateRow(rowId) {
+  const tr = document.getElementById(rowId);
+  const currency = tr.getAttribute('data-currency');
+  const code = tr.getAttribute('data-code');
+  const group = tr.querySelector('.gate-group').value.trim();
+  const type = tr.querySelector('.gate-type').value;
+  const arrangement = tr.querySelector('.gate-arrangement').value;
+
+  if (!group) {
+    tr.querySelector('.gate-group').style.borderColor = '#B3261E';
+    return;
+  }
+
+  customMappings[currency][code] = { group, type, arrangement };
+  saveCustomMappings();
+  updateCustomBadge();
+
+  const key = `${currency}::${code}`;
+  gateResolved.add(key);
+
+  tr.classList.add('custom-row');
+  tr.cells[2].innerHTML = `${escapeHtml(group)}`;
+  tr.cells[3].innerHTML = type;
+  tr.cells[4].innerHTML = escapeHtml(arrangement);
+  tr.cells[5].innerHTML = '<span style="color:#1E7145;font-weight:700;font-size:11px;">Saved ✓</span>';
+
+  const total = document.querySelectorAll('#gateTableBody tr').length;
+  updateGateProgress(total);
+}
+
+function updateGateProgress(total) {
+  const progressEl = document.getElementById('gateProgress');
+  const continueBtn = document.getElementById('gateContinueBtn');
+  progressEl.textContent = `${gateResolved.size} of ${total} classified`;
+  continueBtn.disabled = gateResolved.size < total;
+}
+
+function closeGate() {
+  document.getElementById('gateOverlay').classList.remove('show');
+}
+
+document.getElementById('gateCloseBtn').addEventListener('click', () => {
+  closeGate();
+  document.getElementById('status').textContent = 'Cancelled — classify the flagged accounts, then click Generate Summary again.';
+});
+document.getElementById('gateCancelBtn').addEventListener('click', () => {
+  closeGate();
+  document.getElementById('status').textContent = 'Cancelled — classify the flagged accounts, then click Generate Summary again.';
+});
+document.getElementById('gateContinueBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('gateContinueBtn');
+  btn.disabled = true;
+  try {
+    await buildAndShowResults(pendingParsedData);
+    closeGate();
+    document.getElementById('status').textContent = 'Done.';
+  } catch (err) {
+    console.error(err);
+    document.getElementById('status').classList.add('error');
+    document.getElementById('status').textContent = 'Error: ' + err.message;
+    closeGate();
+  }
+});
+
+function fmt(n) {
+  const v = Math.round(n * 100) / 100;
+  const s = Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return v < 0 ? `(${s})` : s;
+}
+
+function renderResults(reconRows, unmappedSections) {
+  const tbody = document.getElementById('reconBody');
+  tbody.innerHTML = '';
+  for (const { sheet, agg } of reconRows) {
+    const mappedPlusUnmapped = agg.mappedTotal + agg.unmappedTotal;
+    const diff = mappedPlusUnmapped - agg.sourceTotal;
+    const ok = Math.abs(diff) < 0.01;
+    const tr = document.createElement('tr');
+    tr.className = ok ? 'ok' : 'warn';
+    tr.innerHTML = `
+      <td>${sheet}</td>
+      <td class="num">${fmt(agg.sourceTotal)}</td>
+      <td class="num">${fmt(mappedPlusUnmapped)}</td>
+      <td class="num">${fmt(diff)}</td>
+      <td class="status">${ok ? 'Balanced' : 'CHECK'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  const container = document.getElementById('unmappedContainer');
+  container.innerHTML = '';
+  if (unmappedSections.length) {
+    const panel = document.createElement('div');
+    panel.className = 'unmapped-panel';
+    let html = `<h3>Unclassified account codes (${unmappedSections.reduce((s, u) => s + u.items.length, 0)}) — review and classify them</h3>`;
+    for (const section of unmappedSections) {
+      html += `<strong>${section.label}</strong><table><tr><th>Code</th><th>Name</th><th style="text-align:right">Balance</th><th></th></tr>`;
+      for (const item of section.items) {
+        html += `<tr><td>${escapeHtml(item.code)}</td><td>${escapeHtml(item.name)}</td><td class="num">${fmt(item.balance)}</td><td><button class="link-btn" onclick="openSettings({currency:'${section.currency}', code:'${escapeJs(item.code)}'})">Classify</button></td></tr>`;
+      }
+      html += '</table>';
+    }
+    html += '<p style="margin:10px 0 0 0;font-size:11.5px;color:var(--slate-light);">After classifying, click Generate Summary again to fold the new mapping into the totals.</p>';
+    panel.innerHTML = html;
+    container.appendChild(panel);
+  }
+
+  document.getElementById('downloadHint').textContent =
+    unmappedSections.length
+      ? 'These are still included in the reconciliation total, just not yet in the FAC/TTY breakdown.'
+      : 'Every account code was classified.';
+}
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!outputBuffer) return;
+  const blob = new Blob([outputBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `RI_FAC_TTY_Summary_${stamp}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+</script>
+</body>
+</html>
