@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zinara Levy Summary Tool — Zimnat</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root {
+    --navy: #A23B72;
+    --navy-dark: #7A2C56;
+    --slate: #44546A;
+    --slate-light: #6b7a94;
+    --line: #D9DEE8;
+    --bg: #F4F6FA;
+    --panel: #FFFFFF;
+    --amber: #B8860B;
+    --amber-bg: #FFF7E6;
+    --green: #1E7145;
+    --green-bg: #EAF7EF;
+    --red: #B3261E;
+    --red-bg: #FBEAEA;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: var(--bg);
+    color: #1B2431;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 28px 32px;
+  }
+  header .brand {
+    font-size: 12.5px;
+    color: #E9C9D9;
+    margin-bottom: 4px;
+  }
+  header h1 {
+    margin: 0 0 4px 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header p {
+    margin: 0;
+    font-size: 13px;
+    color: #EBD5E1;
+    max-width: 640px;
+  }
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .card h2 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .card .hint {
+    font-size: 12px;
+    color: var(--slate-light);
+    margin: 0 0 14px 0;
+  }
+  .dropzone {
+    border: 1.5px dashed var(--line);
+    border-radius: 6px;
+    padding: 26px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: #FAFBFD;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--navy);
+    background: #F7EDF2;
+  }
+  .dropzone input { display: none; }
+  .dropzone .label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .dropzone .sub {
+    font-size: 11.5px;
+    color: var(--slate-light);
+    margin-top: 4px;
+  }
+  .filename {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--slate);
+    background: #F7EDF2;
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: none;
+  }
+  .filename.show { display: block; }
+  .actions {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  button.primary {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+  }
+  button.primary:hover { background: var(--navy-dark); }
+  button.primary:disabled {
+    background: #C7B3BE;
+    cursor: not-allowed;
+  }
+  #status {
+    font-size: 12.5px;
+    color: var(--slate);
+  }
+  #status.error { color: var(--red); font-weight: 600; }
+
+  .stats-grid {
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 720px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat .num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .stat .lbl {
+    font-size: 11.5px;
+    color: var(--slate-light);
+    margin-top: 2px;
+  }
+
+  .warn-panel {
+    margin-top: 18px;
+    border: 1px solid var(--amber);
+    background: var(--amber-bg);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 12.5px;
+    display: none;
+  }
+  .warn-panel.show { display: block; }
+  .warn-panel h3 {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    color: var(--amber);
+  }
+
+  .results {
+    margin-top: 30px;
+    display: none;
+  }
+  .results.show { display: block; }
+  .results h2 {
+    font-size: 15px;
+    color: var(--navy);
+    margin: 0 0 12px 0;
+  }
+  table.recon {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12.5px;
+  }
+  table.recon th {
+    background: var(--navy);
+    color: #fff;
+    text-align: left;
+    padding: 9px 12px;
+    font-weight: 600;
+  }
+  table.recon td {
+    padding: 8px 12px;
+    border-top: 1px solid var(--line);
+  }
+  table.recon td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.recon tr.flagged td { background: var(--amber-bg); }
+
+  .table-wrap {
+    max-height: 420px;
+    overflow-y: auto;
+    border-radius: 8px;
+  }
+  table.recon thead th { position: sticky; top: 0; z-index: 1; }
+
+  .download-row {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--slate-light);
+    padding: 20px;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--slate-light);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><a href="index.html" style="color:#E9C9D9;text-decoration:none">&larr; Main Menu</a> &nbsp;/&nbsp; Zimnat General Insurance &nbsp;/&nbsp; Finance Operations</div>
+  <h1>Zinara Levy Summary Tool</h1>
+  <p>Upload the Zinara workbook — one sheet per office. Every row across every sheet is combined (columns D–H plus J–N), producing a Complete Summary, a Source Tracking log, and a full Detailed Summary. No row is merged away, even duplicate registration numbers.</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Source workbook</h2>
+    <p class="hint">Each sheet should hold rows with: Office (col B), Registration Number (col C), then NWP / Stamp Duty / Gvt Levy / Zinara / Radio in columns D–H, repeated again in columns J–N.</p>
+    <label class="dropzone" id="drop">
+      <input type="file" id="fileInput" accept=".xlsx,.xlsm">
+      <div class="label">Click or drop the Zinara workbook here</div>
+      <div class="sub">.xlsx or .xlsm</div>
+    </label>
+    <div class="filename" id="filename"></div>
+
+    <div class="actions">
+      <button class="primary" id="processBtn" disabled>Process Workbook</button>
+      <span id="status"></span>
+    </div>
+    <p class="note">Sheets named "Complete Summary", "Source Tracking" or "Detailed Summary" are skipped automatically (they're treated as prior output, not source data) — so it's safe to re-run this on a workbook you've already summarised before.</p>
+  </div>
+
+  <div class="stats-grid" id="statsGrid" style="display:none;"></div>
+
+  <div class="warn-panel" id="warnPanel">
+    <h3>Rows with a blank registration number</h3>
+    <div id="warnBody"></div>
+  </div>
+
+  <div class="results" id="results">
+    <h2>Complete Summary — preview (first 25 rows)</h2>
+    <div class="table-wrap">
+      <table class="recon" id="previewTable"></table>
+    </div>
+
+    <div class="download-row">
+      <button class="primary" id="downloadBtn">Download Summary Workbook</button>
+      <span id="downloadHint" style="font-size:12.5px;color:var(--slate-light);"></span>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Internal tools — Finance Operations, Zimnat General Insurance.
+</footer>
+
+<script>
+let sourceWorkbookBuffer = null;
+let sourceFileName = '';
+let outputBuffer = null;
+let entries = [];
+
+const RESERVED_SHEETS = ['Complete Summary', 'Source Tracking', 'Detailed Summary'];
+
+function setupDropzone() {
+  const drop = document.getElementById('drop');
+  const input = document.getElementById('fileInput');
+  const filenameEl = document.getElementById('filename');
+
+  drop.addEventListener('click', () => input.click());
+  drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0], filenameEl);
+  });
+  input.addEventListener('change', () => {
+    if (input.files.length) handleFile(input.files[0], filenameEl);
+  });
+}
+
+function handleFile(file, filenameEl) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    sourceWorkbookBuffer = e.target.result;
+    sourceFileName = file.name;
+    filenameEl.textContent = file.name;
+    filenameEl.classList.add('show');
+    document.getElementById('processBtn').disabled = false;
+    document.getElementById('status').textContent = '';
+    document.getElementById('status').classList.remove('error');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function plainValue(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') {
+    if (v.result !== undefined) return v.result;
+    if (v.richText) return v.richText.map(rt => rt.text).join('');
+    if (v.text) return v.text;
+    if (v instanceof Date) return v;
+  }
+  return v;
+}
+
+function numericValue(v) {
+  const p = plainValue(v);
+  if (p === '' || p === null || p === undefined) return 0;
+  const n = typeof p === 'number' ? p : parseFloat(String(p).replace(/,/g, ''));
+  return isFinite(n) ? n : 0;
+}
+
+function textValue(v) {
+  const p = plainValue(v);
+  if (p === null || p === undefined) return '';
+  return String(p).trim();
+}
+
+function processWorkbook() {
+  const status = document.getElementById('status');
+  status.textContent = 'Reading workbook…';
+  status.classList.remove('error');
+
+  const wb = new ExcelJS.Workbook();
+  wb.xlsx.load(sourceWorkbookBuffer).then(() => {
+    entries = [];
+    let sheetsProcessed = 0;
+    let blankRegCount = 0;
+
+    wb.eachSheet((ws) => {
+      if (RESERVED_SHEETS.includes(ws.name)) return;
+
+      // last row with data in any of columns B–N (not just C — a trailing
+      // row with a blank reg number must still be picked up)
+      let lastRow = 1;
+      for (let r = ws.rowCount; r >= 2; r--) {
+        const rowObj = ws.getRow(r);
+        let hasData = false;
+        for (let c = 2; c <= 14; c++) {
+          if (textValue(rowObj.getCell(c).value) !== '') { hasData = true; break; }
+        }
+        if (hasData) { lastRow = r; break; }
+      }
+      if (lastRow <= 1) return;
+
+      sheetsProcessed++;
+
+      for (let i = 2; i <= lastRow; i++) {
+        const row = ws.getRow(i);
+        const office = textValue(row.getCell(2).value);       // B
+        let regNumber = textValue(row.getCell(3).value);       // C
+
+        const d1 = numericValue(row.getCell(4).value);   // D
+        const e1 = numericValue(row.getCell(5).value);   // E
+        const f1 = numericValue(row.getCell(6).value);   // F
+        const g1 = numericValue(row.getCell(7).value);   // G
+        const h1 = numericValue(row.getCell(8).value);   // H
+        const j1 = numericValue(row.getCell(10).value);  // J
+        const k1 = numericValue(row.getCell(11).value);  // K
+        const l1 = numericValue(row.getCell(12).value);  // L
+        const m1 = numericValue(row.getCell(13).value);  // M
+        const n1 = numericValue(row.getCell(14).value);  // N
+
+        const premium = d1 + j1;
+        const stampDuty = e1 + k1;
+        const govtLevy = f1 + l1;
+        const zinara = g1 + m1;
+        const radio = h1 + n1;
+
+        let flaggedBlank = false;
+        if (regNumber === '') {
+          regNumber = `NO_REG_${ws.name}_ROW${i}`;
+          flaggedBlank = true;
+          blankRegCount++;
+        }
+
+        entries.push({
+          regNumber, office, premium, stampDuty, govtLevy, zinara, radio,
+          sheetName: ws.name, sourceCell: `C${i}`, rowNum: i, flaggedBlank,
+          raw: { d1, e1, f1, g1, h1, j1, k1, l1, m1, n1 }
+        });
+      }
+    });
+
+    if (entries.length === 0) {
+      status.textContent = 'No data found in any sheet.';
+      status.classList.add('error');
+      return;
+    }
+
+    status.textContent = `Processed ${sheetsProcessed} sheet(s), ${entries.length} row(s).`;
+    renderStats(sheetsProcessed, blankRegCount);
+    renderWarnPanel();
+    renderPreview();
+    buildOutputWorkbook().then(() => {
+      document.getElementById('results').classList.add('show');
+      document.getElementById('downloadHint').textContent =
+        `${entries.length} rows • Complete Summary, Source Tracking, Detailed Summary`;
+    });
+  }).catch((err) => {
+    status.textContent = 'Could not read this file — is it a valid .xlsx/.xlsm workbook?';
+    status.classList.add('error');
+    console.error(err);
+  });
+}
+
+function renderStats(sheetsProcessed, blankRegCount) {
+  const grid = document.getElementById('statsGrid');
+  const combinedTotal = entries.reduce((s, e) => s + e.zinara + e.radio, 0);
+  grid.innerHTML = `
+    <div class="stat"><div class="num">${sheetsProcessed}</div><div class="lbl">Sheets processed</div></div>
+    <div class="stat"><div class="num">${entries.length}</div><div class="lbl">Total rows (incl. duplicates)</div></div>
+    <div class="stat"><div class="num">${blankRegCount}</div><div class="lbl">Blank reg numbers auto-tagged</div></div>
+    <div class="stat"><div class="num">${combinedTotal.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="lbl">Combined Zinara + Radio total</div></div>
+  `;
+  grid.style.display = 'grid';
+}
+
+function renderWarnPanel() {
+  const panel = document.getElementById('warnPanel');
+  const flagged = entries.filter(e => e.flaggedBlank);
+  if (flagged.length === 0) { panel.classList.remove('show'); return; }
+  const rows = flagged.slice(0, 20).map(e =>
+    `<tr><td>${e.sheetName}</td><td>${e.sourceCell}</td><td>${e.regNumber}</td></tr>`
+  ).join('');
+  document.getElementById('warnBody').innerHTML = `
+    <p>${flagged.length} row(s) had no registration number — each was given a unique placeholder so it isn't silently dropped.</p>
+    <table>
+      <tr><th>Sheet</th><th>Cell</th><th>Assigned ID</th></tr>
+      ${rows}
+    </table>
+    ${flagged.length > 20 ? `<p>…and ${flagged.length - 20} more (see Source Tracking sheet in the download).</p>` : ''}
+  `;
+  panel.classList.add('show');
+}
+
+function renderPreview() {
+  const table = document.getElementById('previewTable');
+  const rows = entries.slice(0, 25);
+  let html = `<thead><tr>
+    <th>Reg Number</th><th>Office</th><th>Total NWP</th><th>Total Stamp Duty</th>
+    <th>Total Gvt Levy</th><th>Total Zinara</th><th>Total Radio</th><th>Combined</th><th>Source Sheet</th>
+  </tr></thead><tbody>`;
+  rows.forEach(e => {
+    const combined = e.zinara + e.radio;
+    html += `<tr class="${e.flaggedBlank ? 'flagged' : ''}">
+      <td>${e.regNumber}</td><td>${e.office}</td>
+      <td class="num">${e.premium.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="num">${e.stampDuty.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="num">${e.govtLevy.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="num">${e.zinara.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="num">${e.radio.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="num">${combined.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td>${e.sheetName}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function styleHeaderRow(ws, rowNum, lastCol) {
+  const row = ws.getRow(rowNum);
+  for (let c = 1; c <= lastCol; c++) {
+    const cell = row.getCell(c);
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8C8C8' } };
+    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+  }
+}
+
+function styleTotalRow(ws, rowNum, lastCol) {
+  const row = ws.getRow(rowNum);
+  for (let c = 1; c <= lastCol; c++) {
+    const cell = row.getCell(c);
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB4B4B4' } };
+    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+  }
+}
+
+function styleDataRow(ws, rowNum, lastCol) {
+  const row = ws.getRow(rowNum);
+  for (let c = 1; c <= lastCol; c++) {
+    row.getCell(c).border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+  }
+}
+
+function autoWidth(ws, headers, colCount) {
+  const widths = headers.map(h => Math.max(String(h).length + 2, 10));
+  ws.eachRow((row, rowNum) => {
+    for (let c = 1; c <= colCount; c++) {
+      const v = row.getCell(c).value;
+      const len = v === null || v === undefined ? 0 : String(v).length;
+      widths[c-1] = Math.min(Math.max(widths[c-1], len + 2), 42);
+    }
+  });
+  widths.forEach((w, idx) => { ws.getColumn(idx+1).width = w; });
+}
+
+async function buildOutputWorkbook() {
+  const outWb = new ExcelJS.Workbook();
+
+  // ===== Complete Summary =====
+  const wsSummary = outWb.addWorksheet('Complete Summary');
+  const summaryHeaders = ['Registration Number','Office','Total NWP','Total Stamp Duty','Total Gvt Levy','Total Zinara','Total Radio','Total Combined','Source Sheet'];
+  wsSummary.getRow(1).values = summaryHeaders;
+  styleHeaderRow(wsSummary, 1, summaryHeaders.length);
+
+  let r = 2;
+  entries.forEach(e => {
+    const row = wsSummary.getRow(r);
+    row.values = [e.regNumber, e.office, e.premium, e.stampDuty, e.govtLevy, e.zinara, e.radio, e.zinara + e.radio, e.sheetName];
+    ['C','D','E','F','G','H'].forEach(col => { wsSummary.getCell(`${col}${r}`).numFmt = '#,##0.00'; });
+    styleDataRow(wsSummary, r, summaryHeaders.length);
+    r++;
+  });
+  const summaryTotalRow = r;
+  wsSummary.getCell(`A${summaryTotalRow}`).value = 'GRAND TOTAL';
+  ['C','D','E','F','G','H'].forEach(col => {
+    wsSummary.getCell(`${col}${summaryTotalRow}`).value = { formula: `SUM(${col}2:${col}${summaryTotalRow-1})` };
+    wsSummary.getCell(`${col}${summaryTotalRow}`).numFmt = '#,##0.00';
+  });
+  styleTotalRow(wsSummary, summaryTotalRow, summaryHeaders.length);
+  autoWidth(wsSummary, summaryHeaders, summaryHeaders.length);
+
+  // ===== Source Tracking =====
+  const wsSource = outWb.addWorksheet('Source Tracking');
+  const sourceHeaders = ['Registration Number','Source Sheet','Cell Address','Row Number'];
+  wsSource.getRow(1).values = sourceHeaders;
+  styleHeaderRow(wsSource, 1, sourceHeaders.length);
+
+  let sr = 2;
+  entries.forEach(e => {
+    const row = wsSource.getRow(sr);
+    row.values = [e.regNumber, e.sheetName, e.sourceCell, e.rowNum];
+    styleDataRow(wsSource, sr, sourceHeaders.length);
+    sr++;
+  });
+  autoWidth(wsSource, sourceHeaders, sourceHeaders.length);
+
+  // ===== Detailed Summary =====
+  const wsDetailed = outWb.addWorksheet('Detailed Summary');
+  const detailedHeaders = ['Sheet Name','Office','Registration Number','NWP (D)','Stamp Duty (E)','Gvt Levy (F)','Zinara (G)','Radio (H)','NWP (J)','Stamp Duty (K)','Gvt Levy (L)','Zinara (M)','Radio (N)','Total NWP','Total Stamp Duty','Total Gvt Levy','Total Zinara','Total Radio','Combined Total'];
+  wsDetailed.getRow(1).values = detailedHeaders;
+  styleHeaderRow(wsDetailed, 1, detailedHeaders.length);
+
+  let dr = 2;
+  entries.forEach(e => {
+    const row = wsDetailed.getRow(dr);
+    const { d1,e1,f1,g1,h1,j1,k1,l1,m1,n1 } = e.raw;
+    row.values = [
+      e.sheetName, e.office, e.regNumber,
+      d1, e1, f1, g1, h1,
+      j1, k1, l1, m1, n1,
+      e.premium, e.stampDuty, e.govtLevy, e.zinara, e.radio, e.zinara + e.radio
+    ];
+    for (let c = 4; c <= 19; c++) { row.getCell(c).numFmt = '#,##0.00'; }
+    styleDataRow(wsDetailed, dr, detailedHeaders.length);
+    dr++;
+  });
+  const detailedTotalRow = dr;
+  wsDetailed.getCell(`A${detailedTotalRow}`).value = 'TOTALS';
+  ['N','O','P','Q','R','S'].forEach(col => {
+    wsDetailed.getCell(`${col}${detailedTotalRow}`).value = { formula: `SUM(${col}2:${col}${detailedTotalRow-1})` };
+    wsDetailed.getCell(`${col}${detailedTotalRow}`).numFmt = '#,##0.00';
+  });
+  styleTotalRow(wsDetailed, detailedTotalRow, detailedHeaders.length);
+  autoWidth(wsDetailed, detailedHeaders, detailedHeaders.length);
+
+  outputBuffer = await outWb.xlsx.writeBuffer();
+}
+
+document.getElementById('processBtn').addEventListener('click', processWorkbook);
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!outputBuffer) return;
+  const blob = new Blob([outputBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `Zinara_Summary_${stamp}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+setupDropzone();
+</script>
+
+</body>
+</html>
